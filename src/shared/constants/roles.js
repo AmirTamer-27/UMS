@@ -1,0 +1,14 @@
+export const USER_ROLES = {
+  ADMIN: "admin",
+  STUDENT: "student",
+  INSTRUCTOR: "instructor",
+  TEACHER: "teacher",
+  PARENT: "parent",
+  STAFF: "staff",
+};
+
+export const ROLE_GROUPS = {
+  ACADEMIC_STAFF: [USER_ROLES.INSTRUCTOR, USER_ROLES.TEACHER],
+  COMMUNITY_USERS: [USER_ROLES.STUDENT, USER_ROLES.PARENT],
+  INTERNAL_USERS: [USER_ROLES.ADMIN, USER_ROLES.STAFF],
+};
