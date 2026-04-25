@@ -21,7 +21,7 @@ import LoginPage from "../../modules/auth/login/pages/LoginPage";
 const HomePage = () => {
   const { profile, role, user, logout, loading } = useAuth();
 
-  if (loading) {
+  if (loading && !user) {
     return (
       <Box
         sx={{

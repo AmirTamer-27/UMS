@@ -1,17 +1,23 @@
 import Chip from "@mui/material/Chip";
-import Divider from "@mui/material/Divider";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 
-const CourseOfferingCard = ({ course }) => (
+const CourseOfferingCard = ({ course, onSelect }) => (
   <Paper
     elevation={0}
+    onClick={() => onSelect?.(course)}
     sx={{
+      cursor: "pointer",
       border: 1,
       borderColor: "divider",
       borderRadius: 2,
       p: 3,
+      transition: "border-color 0.2s ease, transform 0.2s ease",
+      "&:hover": {
+        borderColor: "primary.main",
+        transform: "translateY(-1px)",
+      },
     }}
   >
     <Stack spacing={2}>
@@ -38,8 +44,8 @@ const CourseOfferingCard = ({ course }) => (
           >
             {course.courseName}
           </Typography>
-          <Typography sx={{ color: "text.secondary", lineHeight: 1.6 }}>
-            {course.description || "No course description has been added yet."}
+          <Typography sx={{ color: "text.secondary" }}>
+            Click to view course details and prerequisites.
           </Typography>
         </Stack>
 
@@ -54,40 +60,6 @@ const CourseOfferingCard = ({ course }) => (
           </Typography>
           <Typography sx={{ color: "text.secondary", fontSize: "0.875rem" }}>
             {course.registeredCount} / {course.seatLimit} registered
-          </Typography>
-        </Stack>
-      </Stack>
-
-      <Divider />
-
-      <Stack
-        direction={{ xs: "column", sm: "row" }}
-        spacing={{ xs: 1.5, sm: 4 }}
-      >
-        <Stack spacing={0.25}>
-          <Typography sx={{ color: "text.secondary", fontWeight: 700 }}>
-            Instructor
-          </Typography>
-          <Typography sx={{ color: "text.primary" }}>
-            {course.instructorName}
-          </Typography>
-        </Stack>
-
-        <Stack spacing={0.25}>
-          <Typography sx={{ color: "text.secondary", fontWeight: 700 }}>
-            Credit Hours
-          </Typography>
-          <Typography sx={{ color: "text.primary" }}>
-            {course.creditHours}
-          </Typography>
-        </Stack>
-
-        <Stack spacing={0.25}>
-          <Typography sx={{ color: "text.secondary", fontWeight: 700 }}>
-            Recommended Level
-          </Typography>
-          <Typography sx={{ color: "text.primary" }}>
-            Level {course.recommendedLevel}
           </Typography>
         </Stack>
       </Stack>

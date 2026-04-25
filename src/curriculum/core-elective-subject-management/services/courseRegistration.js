@@ -167,6 +167,34 @@ const getRegisteredCounts = async (client, offeringIds) => {
   return counts;
 };
 
+const getCoursePrerequisites = async (client, courseId) => {
+  const { data, error } = await client
+    .from("course_prerequisites")
+    .select("prerequisite_course_id")
+    .eq("course_id", courseId);
+
+  if (error) {
+    throw error;
+  }
+
+  const prerequisiteIds = [...new Set((data ?? []).map((row) => row.prerequisite_course_id))];
+
+  if (!prerequisiteIds.length) {
+    return [];
+  }
+
+  const { data: courses, error: coursesError } = await client
+    .from("courses")
+    .select("id, code, name")
+    .in("id", prerequisiteIds);
+
+  if (coursesError) {
+    throw coursesError;
+  }
+
+  return courses ?? [];
+};
+
 export const courseRegistrationService = {
   getAvailableCoursesForStudent: async (profile) => {
     if (!profile?.id) {
@@ -261,6 +289,21 @@ export const courseRegistrationService = {
           availableSeats: Math.max(seatLimit - registeredCount, 0),
         };
       }),
+    };
+  },
+  getCourseDetails: async (courseId) => {
+    if (!courseId) {
+      throw new Error("A course id is required.");
+    }
+
+    const client = requireSupabase();
+    const prerequisites = await withTimeout(
+      getCoursePrerequisites(client, courseId),
+      "Loading prerequisites",
+    );
+
+    return {
+      prerequisites,
     };
   },
 };

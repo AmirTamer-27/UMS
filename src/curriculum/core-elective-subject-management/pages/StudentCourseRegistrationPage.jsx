@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useState } from "react";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -6,12 +7,13 @@ import Container from "@mui/material/Container";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import { useEffect } from "react";
 import { Navigate } from "react-router-dom";
 
 import { useAuth } from "../../../context/AuthContext";
+import { courseRegistrationService } from "../services/courseRegistration";
 import { useAvailableCourses } from "../hooks/useAvailableCourses";
 import AvailableCoursesSection from "../components/AvailableCoursesSection";
+import CourseDetailsDialog from "../components/CourseDetailsDialog";
 
 const StudentCourseRegistrationPage = () => {
   const {
@@ -23,12 +25,41 @@ const StudentCourseRegistrationPage = () => {
   } = useAuth();
   const { activeSemester, student, offerings, loading, error, refresh } =
     useAvailableCourses(profile);
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsError, setDetailsError] = useState("");
+  const [prerequisites, setPrerequisites] = useState([]);
 
   useEffect(() => {
     if (user && !profile && !authLoading) {
       refreshProfile().catch(() => {});
     }
   }, [authLoading, profile, refreshProfile, user]);
+
+  const handleSelectCourse = useCallback(async (course) => {
+    setSelectedCourse(course);
+    setDetailsLoading(true);
+    setDetailsError("");
+    setPrerequisites([]);
+
+    try {
+      const data = await courseRegistrationService.getCourseDetails(course.courseId);
+      setPrerequisites(data.prerequisites);
+    } catch (loadError) {
+      setDetailsError(
+        loadError.message || "Unable to load course details right now.",
+      );
+    } finally {
+      setDetailsLoading(false);
+    }
+  }, []);
+
+  const handleCloseDialog = useCallback(() => {
+    setSelectedCourse(null);
+    setDetailsError("");
+    setDetailsLoading(false);
+    setPrerequisites([]);
+  }, []);
 
   if (authLoading && !user) {
     return (
@@ -67,18 +98,36 @@ const StudentCourseRegistrationPage = () => {
             >
               Available courses for the active semester
             </Typography>
-            <Alert
-              action={
-                <Button color="inherit" onClick={() => refreshProfile()} size="small">
-                  Retry
-                </Button>
-              }
-              severity="error"
-              variant="outlined"
+            <Paper
+              elevation={0}
+              sx={{
+                alignItems: "center",
+                border: 1,
+                borderColor: "divider",
+                borderRadius: 2,
+                display: "flex",
+                gap: 2,
+                minHeight: 120,
+                px: 3,
+                py: 2.5,
+              }}
             >
-              {authError ||
-                "Your application profile could not be loaded, so course eligibility cannot be determined yet."}
-            </Alert>
+              <CircularProgress size={28} />
+              <Stack spacing={0.5}>
+                <Typography sx={{ color: "text.primary", fontWeight: 700 }}>
+                  Loading your academic profile
+                </Typography>
+                <Typography sx={{ color: "text.secondary" }}>
+                  We&apos;re checking your department and level so we can show the
+                  right courses.
+                </Typography>
+                {authError ? (
+                  <Typography sx={{ color: "error.main", fontSize: "0.875rem" }}>
+                    {authError}
+                  </Typography>
+                ) : null}
+              </Stack>
+            </Paper>
           </Stack>
         </Container>
       </Box>
@@ -226,17 +275,28 @@ const StudentCourseRegistrationPage = () => {
               <AvailableCoursesSection
                 courses={coreCourses}
                 description="Required courses published for your current level."
+                onSelectCourse={handleSelectCourse}
                 title="Core subjects"
               />
               <AvailableCoursesSection
                 courses={electiveCourses}
                 description="Optional subjects you can choose from this semester."
+                onSelectCourse={handleSelectCourse}
                 title="Electives"
               />
             </Stack>
           ) : null}
         </Stack>
       </Container>
+
+      <CourseDetailsDialog
+        course={selectedCourse}
+        error={detailsError}
+        loading={detailsLoading}
+        onClose={handleCloseDialog}
+        open={Boolean(selectedCourse)}
+        prerequisites={prerequisites}
+      />
     </Box>
   );
 };

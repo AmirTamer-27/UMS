@@ -3,7 +3,7 @@ import Typography from "@mui/material/Typography";
 
 import CourseOfferingCard from "./CourseOfferingCard";
 
-const AvailableCoursesSection = ({ courses, description, title }) => {
+const AvailableCoursesSection = ({ courses, description, onSelectCourse, title }) => {
   if (!courses.length) {
     return null;
   }
@@ -22,7 +22,11 @@ const AvailableCoursesSection = ({ courses, description, title }) => {
 
       <Stack spacing={2}>
         {courses.map((course) => (
-          <CourseOfferingCard course={course} key={course.id} />
+          <CourseOfferingCard
+            course={course}
+            key={course.id}
+            onSelect={onSelectCourse}
+          />
         ))}
       </Stack>
     </Stack>
