@@ -1,1 +1,1 @@
-export {};
+export { useAvailableCourses } from "./useAvailableCourses";

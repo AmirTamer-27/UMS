@@ -1,1 +1,1 @@
-export {};
+export { default as StudentCourseRegistrationPage } from "./StudentCourseRegistrationPage";

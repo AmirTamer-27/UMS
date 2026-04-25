@@ -1,0 +1,116 @@
+import { useState } from "react";
+
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import CircularProgress from "@mui/material/CircularProgress";
+import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
+
+import { useAuth } from "../../../../context/AuthContext";
+
+const LoginForm = ({ onSuccess }) => {
+  const { login, loading } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError("");
+
+    if (!email || !password) {
+      setError("Please enter both email and password.");
+      return;
+    }
+
+    try {
+      await login({ email, password });
+      onSuccess?.();
+    } catch (authError) {
+      setError(authError.message || "Unable to sign in. Please try again.");
+    }
+  };
+
+  return (
+    <Box component="form" onSubmit={handleSubmit} noValidate>
+      <Stack spacing={3}>
+        <Box>
+          <Typography
+            component="h1"
+            variant="h4"
+            sx={{
+              color: "text.primary",
+              fontWeight: 700,
+              letterSpacing: 0,
+              mb: 1,
+            }}
+          >
+            Welcome back
+          </Typography>
+          <Typography sx={{ color: "text.secondary", fontSize: "1rem" }}>
+            Sign in with your university account to continue.
+          </Typography>
+        </Box>
+
+        {error ? (
+          <Alert severity="error" variant="outlined">
+            {error}
+          </Alert>
+        ) : null}
+
+        <TextField
+          autoComplete="email"
+          autoFocus
+          disabled={loading}
+          fullWidth
+          label="Email address"
+          name="email"
+          onChange={(event) => setEmail(event.target.value)}
+          required
+          type="email"
+          value={email}
+        />
+
+        <TextField
+          autoComplete="current-password"
+          disabled={loading}
+          fullWidth
+          label="Password"
+          name="password"
+          onChange={(event) => setPassword(event.target.value)}
+          required
+          type="password"
+          value={password}
+        />
+
+        <Button
+          disabled={loading}
+          fullWidth
+          size="large"
+          type="submit"
+          variant="contained"
+          sx={{
+            borderRadius: 2,
+            boxShadow: "none",
+            fontWeight: 700,
+            py: 1.4,
+            textTransform: "none",
+            "&:hover": {
+              boxShadow: "none",
+            },
+          }}
+        >
+          {loading ? (
+            <CircularProgress color="inherit" size={22} />
+          ) : (
+            "Sign in"
+          )}
+        </Button>
+      </Stack>
+    </Box>
+  );
+};
+
+export default LoginForm;

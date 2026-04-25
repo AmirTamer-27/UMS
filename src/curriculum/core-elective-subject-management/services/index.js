@@ -1,1 +1,1 @@
-export {};
+export { courseRegistrationService } from "./courseRegistration";
