@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import CssBaseline from "@mui/material/CssBaseline";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 
@@ -59,5 +60,12 @@ const App = () => (
     </AuthProvider>
   </ThemeProvider>
 );
+=======
+import Dashboard from "./app/Dashboard";
+
+function App() {
+  return <Dashboard />;
+}
+>>>>>>> Stashed changes
 
 export default App;

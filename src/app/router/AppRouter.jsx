@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import {
   BrowserRouter as Router,
   Link as RouterLink,
@@ -124,5 +125,10 @@ const AppRouter = () => (
     </Routes>
   </Router>
 );
+=======
+import Dashboard from "../Dashboard";
+
+const AppRouter = () => <Dashboard />;
+>>>>>>> Stashed changes
 
 export default AppRouter;
