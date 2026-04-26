@@ -3,7 +3,14 @@ import Typography from "@mui/material/Typography";
 
 import CourseOfferingCard from "./CourseOfferingCard";
 
-const AvailableCoursesSection = ({ courses, description, onSelectCourse, title }) => {
+const AvailableCoursesSection = ({
+  actionLoadingId,
+  courses,
+  description,
+  onAddCourse,
+  onViewCourse,
+  title,
+}) => {
   if (!courses.length) {
     return null;
   }
@@ -23,9 +30,15 @@ const AvailableCoursesSection = ({ courses, description, onSelectCourse, title }
       <Stack spacing={2}>
         {courses.map((course) => (
           <CourseOfferingCard
+            actionDisabled={course.availableSeats <= 0}
+            actionLabel={
+              course.availableSeats <= 0 ? "Full" : "Add to selection"
+            }
+            actionLoading={actionLoadingId === course.id}
             course={course}
             key={course.id}
-            onSelect={onSelectCourse}
+            onAction={onAddCourse}
+            onViewDetails={onViewCourse}
           />
         ))}
       </Stack>

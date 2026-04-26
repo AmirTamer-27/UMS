@@ -1,68 +1,62 @@
-import Chip from "@mui/material/Chip";
+import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
-import Typography from "@mui/material/Typography";
 
-const CourseOfferingCard = ({ course, onSelect }) => (
+import {
+  CourseActions,
+  CourseTitleBlock,
+  SeatSummary,
+  courseCardSx,
+} from "./CourseOfferingCardParts";
+
+const CourseOfferingCard = ({
+  actionDisabled = false,
+  actionLabel,
+  actionLoading = false,
+  actionLoadingLabel = "Saving...",
+  actionVariant = "contained",
+  compact = false,
+  course,
+  onAction,
+  onViewDetails,
+  statusColor = "success",
+  statusLabel,
+}) => (
   <Paper
     elevation={0}
-    onClick={() => onSelect?.(course)}
-    sx={{
-      cursor: "pointer",
-      border: 1,
-      borderColor: "divider",
-      borderRadius: 2,
-      p: 3,
-      transition: "border-color 0.2s ease, transform 0.2s ease",
-      "&:hover": {
-        borderColor: "primary.main",
-        transform: "translateY(-1px)",
-      },
-    }}
+    sx={courseCardSx({ compact, statusColor, statusLabel })}
   >
-    <Stack spacing={2}>
-      <Stack
-        direction={{ xs: "column", sm: "row" }}
-        justifyContent="space-between"
-        spacing={2}
+    <Stack spacing={compact ? 1.75 : 2.25}>
+      <Box
+        sx={{
+          display: "grid",
+          gap: compact ? 1.5 : 2,
+          gridTemplateColumns: {
+            xs: "1fr",
+            sm: compact ? "1fr" : "minmax(0, 1fr) 150px",
+          },
+        }}
       >
-        <Stack spacing={0.75}>
-          <Stack alignItems="center" direction="row" spacing={1}>
-            <Typography sx={{ color: "text.secondary", fontWeight: 700 }}>
-              {course.courseCode}
-            </Typography>
-            <Chip
-              color={course.courseType === "core" ? "primary" : "secondary"}
-              label={course.courseType === "core" ? "Core" : "Elective"}
-              size="small"
-              variant="outlined"
-            />
-          </Stack>
-          <Typography
-            component="h3"
-            sx={{ color: "text.primary", fontSize: "1.1rem", fontWeight: 700 }}
-          >
-            {course.courseName}
-          </Typography>
-          <Typography sx={{ color: "text.secondary" }}>
-            Click to view course details and prerequisites.
-          </Typography>
-        </Stack>
+        <CourseTitleBlock
+          compact={compact}
+          course={course}
+          statusColor={statusColor}
+          statusLabel={statusLabel}
+        />
+        {!compact ? <SeatSummary course={course} /> : null}
+      </Box>
 
-        <Stack alignItems={{ xs: "flex-start", sm: "flex-end" }} spacing={0.5}>
-          <Typography sx={{ color: "text.secondary", fontWeight: 700 }}>
-            Available Seats
-          </Typography>
-          <Typography
-            sx={{ color: "text.primary", fontSize: "1.4rem", fontWeight: 800 }}
-          >
-            {course.availableSeats}
-          </Typography>
-          <Typography sx={{ color: "text.secondary", fontSize: "0.875rem" }}>
-            {course.registeredCount} / {course.seatLimit} registered
-          </Typography>
-        </Stack>
-      </Stack>
+      <CourseActions
+        actionDisabled={actionDisabled}
+        actionLabel={actionLabel}
+        actionLoading={actionLoading}
+        actionLoadingLabel={actionLoadingLabel}
+        actionVariant={actionVariant}
+        compact={compact}
+        course={course}
+        onAction={onAction}
+        onViewDetails={onViewDetails}
+      />
     </Stack>
   </Paper>
 );

@@ -167,6 +167,30 @@ const getRegisteredCounts = async (client, offeringIds) => {
   return counts;
 };
 
+const getStudentRegistrations = async (client, studentId, offeringIds) => {
+  if (!studentId || !offeringIds.length) {
+    return new Map();
+  }
+
+  const { data, error } = await client
+    .from("registrations")
+    .select("id, course_offering_id, status")
+    .eq("student_user_id", studentId)
+    .in("course_offering_id", offeringIds)
+    .in("status", ["selected", "registered"]);
+
+  if (error) {
+    throw error;
+  }
+
+  return new Map(
+    (data ?? []).map((registration) => [
+      registration.course_offering_id,
+      registration,
+    ]),
+  );
+};
+
 const getCoursePrerequisites = async (client, courseId) => {
   const { data, error } = await client
     .from("course_prerequisites")
@@ -240,25 +264,31 @@ export const courseRegistrationService = {
       coursesById.has(offering.course_id),
     );
 
-    const [instructorNames, registeredCounts] = await withTimeout(
-      Promise.all([
-        getInstructorMap(
-          client,
-          [
-            ...new Set(
-              matchingOfferings
-                .map((offering) => offering.instructor_user_id)
-                .filter(Boolean),
-            ),
-          ],
-        ),
-        getRegisteredCounts(
-          client,
-          matchingOfferings.map((offering) => offering.id),
-        ),
-      ]),
-      "Loading instructors and registration counts",
-    );
+    const [instructorNames, registeredCounts, studentRegistrations] =
+      await withTimeout(
+        Promise.all([
+          getInstructorMap(
+            client,
+            [
+              ...new Set(
+                matchingOfferings
+                  .map((offering) => offering.instructor_user_id)
+                  .filter(Boolean),
+              ),
+            ],
+          ),
+          getRegisteredCounts(
+            client,
+            matchingOfferings.map((offering) => offering.id),
+          ),
+          getStudentRegistrations(
+            client,
+            profile.id,
+            matchingOfferings.map((offering) => offering.id),
+          ),
+        ]),
+        "Loading instructors and saved registrations",
+      );
 
     return {
       activeSemester,
@@ -271,6 +301,7 @@ export const courseRegistrationService = {
       offerings: matchingOfferings.map((offering) => {
         const course = coursesById.get(offering.course_id);
         const registeredCount = registeredCounts.get(offering.id) ?? 0;
+        const registration = studentRegistrations.get(offering.id);
         const seatLimit = offering.seat_limit ?? 0;
 
         return {
@@ -287,9 +318,95 @@ export const courseRegistrationService = {
           seatLimit,
           registeredCount,
           availableSeats: Math.max(seatLimit - registeredCount, 0),
+          registrationId: registration?.id ?? null,
+          registrationStatus: registration?.status ?? null,
         };
       }),
     };
+  },
+  addCourseToSelection: async (profile, courseOfferingId) => {
+    if (!profile?.id) {
+      throw new Error("A logged-in student profile is required.");
+    }
+
+    if (!courseOfferingId) {
+      throw new Error("A course offering id is required.");
+    }
+
+    const client = requireSupabase();
+    await getStudentContext(client, profile);
+
+    const { data, error } = await client
+      .from("registrations")
+      .insert({
+        student_user_id: profile.id,
+        course_offering_id: courseOfferingId,
+        status: "selected",
+      })
+      .select("id, course_offering_id, status")
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  },
+  removeCourseFromSelection: async (profile, registrationId) => {
+    if (!profile?.id) {
+      throw new Error("A logged-in student profile is required.");
+    }
+
+    if (!registrationId) {
+      throw new Error("A saved registration id is required.");
+    }
+
+    const client = requireSupabase();
+    await getStudentContext(client, profile);
+
+    const { data, error } = await client
+      .from("registrations")
+      .delete()
+      .eq("id", registrationId)
+      .eq("student_user_id", profile.id)
+      .eq("status", "selected")
+      .select("id");
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data?.length) {
+      throw new Error(
+        "The saved selection was not deleted. Check the registrations delete policy in Supabase.",
+      );
+    }
+  },
+  confirmSelectedCourses: async (profile, courseOfferingIds) => {
+    if (!profile?.id) {
+      throw new Error("A logged-in student profile is required.");
+    }
+
+    if (!courseOfferingIds?.length) {
+      throw new Error("Select at least one course before confirming.");
+    }
+
+    const client = requireSupabase();
+    await getStudentContext(client, profile);
+
+    const { data, error } = await client
+      .from("registrations")
+      .update({ status: "registered" })
+      .eq("student_user_id", profile.id)
+      .in("course_offering_id", courseOfferingIds)
+      .eq("status", "selected")
+      .select("id, course_offering_id, status");
+
+    if (error) {
+      throw error;
+    }
+
+    return data ?? [];
   },
   getCourseDetails: async (courseId) => {
     if (!courseId) {

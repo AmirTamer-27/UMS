@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -12,8 +12,10 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { courseRegistrationService } from "../services/courseRegistration";
 import { useAvailableCourses } from "../hooks/useAvailableCourses";
-import AvailableCoursesSection from "../components/AvailableCoursesSection";
+import AvailableCoursesPanel from "../components/AvailableCoursesPanel";
 import CourseDetailsDialog from "../components/CourseDetailsDialog";
+import RegistrationSummarySection from "../components/RegistrationSummarySection";
+import StudentOverviewCard from "../components/StudentOverviewCard";
 
 const StudentCourseRegistrationPage = () => {
   const {
@@ -21,7 +23,6 @@ const StudentCourseRegistrationPage = () => {
     profile,
     loading: authLoading,
     error: authError,
-    refreshProfile,
   } = useAuth();
   const { activeSemester, student, offerings, loading, error, refresh } =
     useAvailableCourses(profile);
@@ -29,14 +30,11 @@ const StudentCourseRegistrationPage = () => {
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState("");
   const [prerequisites, setPrerequisites] = useState([]);
+  const [actionLoadingId, setActionLoadingId] = useState(null);
+  const [confirming, setConfirming] = useState(false);
+  const [actionMessage, setActionMessage] = useState(null);
 
-  useEffect(() => {
-    if (user && !profile && !authLoading) {
-      refreshProfile().catch(() => {});
-    }
-  }, [authLoading, profile, refreshProfile, user]);
-
-  const handleSelectCourse = useCallback(async (course) => {
+  const handleViewCourse = useCallback(async (course) => {
     setSelectedCourse(course);
     setDetailsLoading(true);
     setDetailsError("");
@@ -60,6 +58,94 @@ const StudentCourseRegistrationPage = () => {
     setDetailsLoading(false);
     setPrerequisites([]);
   }, []);
+
+  const handleAddCourse = useCallback(
+    async (course) => {
+      setActionLoadingId(course.id);
+      setActionMessage(null);
+
+      try {
+        await courseRegistrationService.addCourseToSelection(profile, course.id);
+        await refresh();
+        setActionMessage({
+          severity: "success",
+          text: `${course.courseCode} was saved to your selection list.`,
+        });
+      } catch (saveError) {
+        setActionMessage({
+          severity: "error",
+          text:
+            saveError.message ||
+            "Unable to save this course to your selection list.",
+        });
+      } finally {
+        setActionLoadingId(null);
+      }
+    },
+    [profile, refresh],
+  );
+
+  const handleRemoveCourse = useCallback(
+    async (course) => {
+      setActionLoadingId(course.id);
+      setActionMessage(null);
+
+      try {
+        await courseRegistrationService.removeCourseFromSelection(
+          profile,
+          course.registrationId,
+        );
+        await refresh();
+        setActionMessage({
+          severity: "success",
+          text: `${course.courseCode} was removed from your selection list.`,
+        });
+      } catch (removeError) {
+        setActionMessage({
+          severity: "error",
+          text:
+            removeError.message ||
+            "Unable to remove this course from your selection list.",
+        });
+      } finally {
+        setActionLoadingId(null);
+      }
+    },
+    [profile, refresh],
+  );
+
+  const handleConfirmSelection = useCallback(async () => {
+    const selectedOfferingIds = offerings
+      .filter((course) => course.registrationStatus === "selected")
+      .map((course) => course.id);
+    const submittedCount = selectedOfferingIds.length;
+
+    setConfirming(true);
+    setActionMessage(null);
+
+    try {
+      await courseRegistrationService.confirmSelectedCourses(
+        profile,
+        selectedOfferingIds,
+      );
+      await refresh();
+      setActionMessage({
+        severity: "success",
+        text: `${submittedCount} course${
+          submittedCount === 1 ? "" : "s"
+        } submitted. Your semester enrollment has been recorded.`,
+      });
+    } catch (confirmError) {
+      setActionMessage({
+        severity: "error",
+        text:
+          confirmError.message ||
+          "Unable to confirm your selected courses right now.",
+      });
+    } finally {
+      setConfirming(false);
+    }
+  }, [offerings, profile, refresh]);
 
   if (authLoading && !user) {
     return (
@@ -134,8 +220,21 @@ const StudentCourseRegistrationPage = () => {
     );
   }
 
-  const coreCourses = offerings.filter((course) => course.courseType === "core");
-  const electiveCourses = offerings.filter(
+  const selectedCourses = offerings.filter(
+    (course) => course.registrationStatus === "selected",
+  );
+  const registeredCourses = offerings.filter(
+    (course) => course.registrationStatus === "registered",
+  );
+  const availableOfferings = offerings.filter(
+    (course) =>
+      course.registrationStatus !== "selected" &&
+      course.registrationStatus !== "registered",
+  );
+  const coreCourses = availableOfferings.filter(
+    (course) => course.courseType === "core",
+  );
+  const electiveCourses = availableOfferings.filter(
     (course) => course.courseType !== "core",
   );
 
@@ -178,48 +277,11 @@ const StudentCourseRegistrationPage = () => {
             </Typography>
           </Stack>
 
-          <Paper
-            elevation={0}
-            sx={{
-              border: 1,
-              borderColor: "divider",
-              borderRadius: 2,
-              p: { xs: 2.5, md: 3 },
-            }}
-          >
-            <Stack
-              direction={{ xs: "column", md: "row" }}
-              justifyContent="space-between"
-              spacing={2}
-            >
-              <Stack spacing={0.5}>
-                <Typography sx={{ color: "text.secondary", fontWeight: 700 }}>
-                  Student
-                </Typography>
-                <Typography sx={{ color: "text.primary", fontWeight: 700 }}>
-                  {student?.fullName || user?.email || "Student"}
-                </Typography>
-              </Stack>
-
-              <Stack spacing={0.5}>
-                <Typography sx={{ color: "text.secondary", fontWeight: 700 }}>
-                  Academic level
-                </Typography>
-                <Typography sx={{ color: "text.primary" }}>
-                  {student?.level ? `Level ${student.level}` : "Not available"}
-                </Typography>
-              </Stack>
-
-              <Stack spacing={0.5}>
-                <Typography sx={{ color: "text.secondary", fontWeight: 700 }}>
-                  Eligible offerings
-                </Typography>
-                <Typography sx={{ color: "text.primary" }}>
-                  {offerings.length}
-                </Typography>
-              </Stack>
-            </Stack>
-          </Paper>
+          <StudentOverviewCard
+            eligibleCount={offerings.length}
+            student={student}
+            user={user}
+          />
 
           {loading ? (
             <Box
@@ -248,6 +310,12 @@ const StudentCourseRegistrationPage = () => {
             </Alert>
           ) : null}
 
+          {!loading && !error && actionMessage ? (
+            <Alert severity={actionMessage.severity} variant="outlined">
+              {actionMessage.text}
+            </Alert>
+          ) : null}
+
           {!loading && !error && !offerings.length ? (
             <Paper
               elevation={0}
@@ -271,20 +339,33 @@ const StudentCourseRegistrationPage = () => {
           ) : null}
 
           {!loading && !error && offerings.length ? (
-            <Stack spacing={4}>
-              <AvailableCoursesSection
-                courses={coreCourses}
-                description="Required courses published for your current level."
-                onSelectCourse={handleSelectCourse}
-                title="Core subjects"
+            <Box
+              sx={{
+                alignItems: "start",
+                display: "grid",
+                gap: { xs: 2.5, lg: 3 },
+                gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1fr) 430px" },
+              }}
+            >
+              <AvailableCoursesPanel
+                actionLoadingId={actionLoadingId}
+                availableCourses={availableOfferings}
+                coreCourses={coreCourses}
+                electiveCourses={electiveCourses}
+                onAddCourse={handleAddCourse}
+                onViewCourse={handleViewCourse}
               />
-              <AvailableCoursesSection
-                courses={electiveCourses}
-                description="Optional subjects you can choose from this semester."
-                onSelectCourse={handleSelectCourse}
-                title="Electives"
+
+              <RegistrationSummarySection
+                actionLoadingId={actionLoadingId}
+                confirming={confirming}
+                onConfirm={handleConfirmSelection}
+                onRemoveCourse={handleRemoveCourse}
+                onViewCourse={handleViewCourse}
+                registeredCourses={registeredCourses}
+                selectedCourses={selectedCourses}
               />
-            </Stack>
+            </Box>
           ) : null}
         </Stack>
       </Container>
