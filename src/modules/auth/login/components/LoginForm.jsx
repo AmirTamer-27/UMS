@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
@@ -8,13 +9,14 @@ import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 
-import { useAuth } from "../../../../context/AuthContext";
+import { supabase } from "../../../../services/supabase";
 
-const LoginForm = ({ onSuccess }) => {
-  const { login, loading } = useAuth();
+const LoginForm = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -25,11 +27,27 @@ const LoginForm = ({ onSuccess }) => {
       return;
     }
 
-    try {
-      await login({ email, password });
-      onSuccess?.();
-    } catch (authError) {
-      setError(authError.message || "Unable to sign in. Please try again.");
+    if (!supabase) {
+      setError("Supabase is not configured. Add your Supabase credentials.");
+      return;
+    }
+
+    setLoading(true);
+
+    const { data, error: loginError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    setLoading(false);
+
+    if (loginError) {
+      setError(loginError.message);
+      return;
+    }
+
+    if (data?.user) {
+      navigate("/dashboard");
     }
   };
 

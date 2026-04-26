@@ -4,48 +4,46 @@ import QuickActions from "./QuickActions";
 import RecentActivityCard from "./RecentActivityCard";
 import SummaryCard from "./SummaryCard";
 
+const countValue = (value) => (Array.isArray(value) ? value.length : value || 0);
+
 const AdminDashboard = ({ data, loading }) => {
-  const students = data.profiles.filter((profile) => profile.role === "student");
-  const staff = data.profiles.filter((profile) =>
-    ["instructor", "teacher", "staff"].includes(profile.role),
-  );
+  const totalCourses = countValue(data.courses);
+  const totalStudents = countValue(data.studentProfiles);
+  const totalStaff = countValue(data.staffProfiles);
+  const totalOfferings = countValue(data.courseOfferings);
 
   const cards = [
     {
-      label: "Manage Courses",
-      value: data.courseOfferings.length,
-      helper: "offerings",
+      label: "Total Courses",
+      value: totalCourses,
+      helper: "catalog",
       accent: "primary",
     },
     {
-      label: "Manage Students",
-      value: students.length,
+      label: "Total Students",
+      value: totalStudents,
       helper: "records",
       accent: "secondary",
     },
     {
-      label: "Manage Staff",
-      value: staff.length,
+      label: "Total Staff",
+      value: totalStaff,
       helper: "profiles",
       accent: "warning",
     },
     {
-      label: "System Overview",
-      value:
-        data.courseOfferings.length +
-        data.rooms.length +
-        data.messages.length +
-        data.registrations.length,
-      helper: "items",
+      label: "Total Offerings",
+      value: totalOfferings,
+      helper: "published",
       accent: "primary",
     },
   ];
 
   return (
     <Stack spacing={4}>
-      <Grid container spacing={3} alignItems="stretch">
+      <Grid container spacing={3} alignItems="stretch" sx={{ width: "100%", m: 0 }}>
         {cards.map((card) => (
-          <Grid item key={card.label} md={3} sm={6} xs={12}>
+          <Grid item key={card.label} xs={12} sm={6} md={4} lg={3}>
             <SummaryCard {...card} value={loading ? "..." : card.value} />
           </Grid>
         ))}

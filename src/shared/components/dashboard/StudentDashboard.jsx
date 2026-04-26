@@ -8,41 +8,41 @@ const StudentDashboard = ({ data, loading }) => {
   const cards = [
     {
       label: "My Courses",
-      value: data.registrations.length,
+      value: data.registrations?.length || 0,
       helper: "registered",
       accent: "primary",
     },
     {
       label: "Available Courses",
-      value: data.courseOfferings.length,
+      value: data.courseOfferings?.length || 0,
       helper: "open",
       accent: "secondary",
     },
     {
       label: "Assignments",
-      value: data.assignments.length,
+      value: data.assignments?.length || 0,
       helper: "pending",
       accent: "warning",
     },
     {
       label: "Course Materials",
-      value: data.courseMaterials.length,
+      value: data.courseMaterials?.length || 0,
       helper: "available",
       accent: "primary",
     },
     {
-      label: "Room Booking",
-      value: data.rooms.length,
-      helper: "rooms",
+      label: "Room Bookings",
+      value: data.roomBookings?.length || 0,
+      helper: "reserved",
       accent: "secondary",
     },
   ];
 
   return (
     <Stack spacing={4}>
-      <Grid container spacing={3} alignItems="stretch">
+      <Grid container spacing={3} alignItems="stretch" sx={{ width: "100%", m: 0 }}>
         {cards.map((card) => (
-          <Grid item key={card.label} md={4} sm={6} xs={12}>
+          <Grid item key={card.label} xs={12} sm={6} md={4} lg={3}>
             <SummaryCard {...card} value={loading ? "..." : card.value} />
           </Grid>
         ))}

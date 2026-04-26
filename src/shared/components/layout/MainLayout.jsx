@@ -22,7 +22,7 @@ import LibraryBooksOutlinedIcon from "@mui/icons-material/LibraryBooksOutlined";
 import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import MessageOutlinedIcon from "@mui/icons-material/MessageOutlined";
 
-const drawerWidth = 260;
+const drawerWidth = 240;
 
 const baseNavigation = ["Dashboard", "Courses", "LMS", "Rooms", "Messages"];
 
@@ -52,7 +52,13 @@ const MainLayout = ({ children, profile }) => {
 
   return (
     <Box
-      sx={{ display: "flex", minHeight: "100vh", bgcolor: "background.default" }}
+      sx={{
+        display: "flex",
+        width: "100%",
+        minHeight: "100vh",
+        overflowX: "hidden",
+        bgcolor: "background.default",
+      }}
     >
       <AppBar
         position="fixed"
@@ -93,6 +99,7 @@ const MainLayout = ({ children, profile }) => {
         variant="permanent"
         sx={{
           display: { xs: "none", md: "block" },
+          position: { md: "fixed" },
           width: drawerWidth,
           flexShrink: 0,
           "& .MuiDrawer-paper": {
@@ -157,12 +164,23 @@ const MainLayout = ({ children, profile }) => {
         component="main"
         sx={{
           flexGrow: 1,
+          ml: { md: `${drawerWidth}px` },
           minWidth: 0,
+          overflowX: "hidden",
+          pl: 0,
+          pr: 3,
+          pb: 3,
           pt: 9,
-          width: { md: `calc(100% - ${drawerWidth}px)` },
+          width: "100%",
+          "& .MuiContainer-root": {
+            maxWidth: "none",
+            ml: 0,
+            mr: 0,
+            pl: 0,
+          },
         }}
       >
-        {children}
+        <Box sx={{ width: "100%" }}>{children}</Box>
       </Box>
     </Box>
   );

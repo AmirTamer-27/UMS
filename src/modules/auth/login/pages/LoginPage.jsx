@@ -1,6 +1,3 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Paper from "@mui/material/Paper";
@@ -11,14 +8,7 @@ import { useAuth } from "../../../../context/AuthContext";
 import LoginForm from "../components/LoginForm";
 
 const LoginPage = () => {
-  const navigate = useNavigate();
-  const { isAuthenticated, role } = useAuth();
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate("/", { replace: true });
-    }
-  }, [isAuthenticated, navigate]);
+  const { role } = useAuth();
 
   return (
     <Box
@@ -89,7 +79,7 @@ const LoginPage = () => {
               p: { xs: 3, sm: 4 },
             }}
           >
-            <LoginForm onSuccess={() => navigate("/", { replace: true })} />
+            <LoginForm />
             {role ? (
               <Typography
                 sx={{ color: "text.secondary", mt: 3, textAlign: "center" }}

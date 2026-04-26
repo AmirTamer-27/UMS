@@ -8,31 +8,31 @@ const InstructorDashboard = ({ data, loading }) => {
   const cards = [
     {
       label: "My Course Offerings",
-      value: data.courseOfferings.length,
+      value: data.courseOfferings?.length || 0,
       helper: "active",
       accent: "primary",
     },
     {
       label: "Upload Materials",
-      value: data.courseMaterials.length,
+      value: data.courseMaterials?.length || 0,
       helper: "files",
       accent: "secondary",
     },
     {
       label: "Create Assignments",
-      value: data.assignments.length,
+      value: data.assignments?.length || 0,
       helper: "created",
       accent: "warning",
     },
     {
       label: "Student Submissions",
-      value: data.assignments.length,
+      value: data.assignmentSubmissions?.length || 0,
       helper: "review",
       accent: "primary",
     },
     {
       label: "Messaging",
-      value: data.messages.length,
+      value: data.messages?.length || 0,
       helper: "parents",
       accent: "secondary",
     },
@@ -40,9 +40,9 @@ const InstructorDashboard = ({ data, loading }) => {
 
   return (
     <Stack spacing={4}>
-      <Grid container spacing={3} alignItems="stretch">
+      <Grid container spacing={3} alignItems="stretch" sx={{ width: "100%", m: 0 }}>
         {cards.map((card) => (
-          <Grid item key={card.label} md={4} sm={6} xs={12}>
+          <Grid item key={card.label} xs={12} sm={6} md={4} lg={3}>
             <SummaryCard {...card} value={loading ? "..." : card.value} />
           </Grid>
         ))}
