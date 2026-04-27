@@ -9,6 +9,7 @@ import { ProtectedRoute } from "../guards";
 import { StudentCourseRegistrationPage } from "../../curriculum/core-elective-subject-management/pages";
 import LoginPage from "../../modules/auth/login/pages/LoginPage";
 import Dashboard from "../Dashboard";
+import AdminCourseOfferingPage from "../../modules/curriculum/course-registration/admin/AdminCourseOfferingPage";
 
 const AppRouter = () => (
   <Router>
@@ -30,6 +31,7 @@ const AppRouter = () => (
         }
         path="/dashboard"
       />
+      <Route element={<AdminCourseOfferingPage />} path="/admin/course-offerings" />
       <Route element={<Navigate replace to="/login" />} path="/" />
       <Route element={<Navigate replace to="/" />} path="*" />
     </Routes>
