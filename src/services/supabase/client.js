@@ -10,10 +10,15 @@ export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
 export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey, {
+      // For local development, avoid automatic token refresh and URL session detection
+      // which can trigger NavigatorLock contention in some browsers/React StrictMode.
+      // Disable persisted sessions while developing to reduce navigator.lock usage.
       auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
+        persistSession: import.meta.env.DEV ? false : true,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
       },
     })
   : null;
+
+export default supabase;

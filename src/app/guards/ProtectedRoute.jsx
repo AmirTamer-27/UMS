@@ -22,14 +22,21 @@ const ProtectedRoute = ({ children }) => {
         return;
       }
 
-      const {
-        data: { user: currentUser },
-        error,
-      } = await supabase.auth.getUser();
-
-      if (isMounted) {
-        setUser(error ? null : currentUser);
-        setLoading(false);
+      try {
+        const result = await supabase.auth.getUser();
+        const currentUser = result?.data?.user ?? null;
+        if (isMounted) {
+          setUser(currentUser);
+          setLoading(false);
+        }
+      } catch (err) {
+        // ensure loading ends even if auth call throws
+        // eslint-disable-next-line no-console
+        console.error('ProtectedRoute auth error', err);
+        if (isMounted) {
+          setUser(null);
+          setLoading(false);
+        }
       }
     };
 
