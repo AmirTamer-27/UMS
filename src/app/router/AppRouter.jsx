@@ -10,10 +10,10 @@ import { StudentCourseRegistrationPage } from "../../curriculum/core-elective-su
 import LoginPage from "../../modules/auth/login/pages/LoginPage";
 import Dashboard from "../Dashboard";
 import AdminCourseOfferingPage from "../../modules/curriculum/course-registration/admin/AdminCourseOfferingPage";
-
-// LMS Pages
-import CourseOfferingPage from "../../modules/lms/pages/CourseOfferingPage";
-import AssignmentDetailPage from "../../modules/lms/pages/AssignmentDetailPage";
+import {
+  AdminCreateStaffPage,
+  StaffProfilePage,
+} from "../../staff/professor-ta-management/pages";
 
 const AppRouter = () => (
   <Router>
@@ -38,18 +38,18 @@ const AppRouter = () => (
       <Route
         element={
           <ProtectedRoute>
-            <CourseOfferingPage />
+            <StaffProfilePage />
           </ProtectedRoute>
         }
-        path="/lms/courses/:courseOfferingId"
+        path="/staff/profile"
       />
       <Route
         element={
           <ProtectedRoute>
-            <AssignmentDetailPage />
+            <AdminCreateStaffPage />
           </ProtectedRoute>
         }
-        path="/lms/courses/:courseOfferingId/assignments/:assignmentId"
+        path="/admin/staff/create"
       />
       <Route element={<AdminCourseOfferingPage />} path="/admin/course-offerings" />
       <Route element={<Navigate replace to="/login" />} path="/" />
