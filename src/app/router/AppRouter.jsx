@@ -10,6 +10,10 @@ import { StudentCourseRegistrationPage } from "../../curriculum/core-elective-su
 import LoginPage from "../../modules/auth/login/pages/LoginPage";
 import Dashboard from "../Dashboard";
 import AdminCourseOfferingPage from "../../modules/curriculum/course-registration/admin/AdminCourseOfferingPage";
+import {
+  AdminCreateStaffPage,
+  StaffProfilePage,
+} from "../../staff/professor-ta-management/pages";
 
 const AppRouter = () => (
   <Router>
@@ -30,6 +34,22 @@ const AppRouter = () => (
           </ProtectedRoute>
         }
         path="/dashboard"
+      />
+      <Route
+        element={
+          <ProtectedRoute>
+            <StaffProfilePage />
+          </ProtectedRoute>
+        }
+        path="/staff/profile"
+      />
+      <Route
+        element={
+          <ProtectedRoute>
+            <AdminCreateStaffPage />
+          </ProtectedRoute>
+        }
+        path="/admin/staff/create"
       />
       <Route element={<AdminCourseOfferingPage />} path="/admin/course-offerings" />
       <Route element={<Navigate replace to="/login" />} path="/" />
