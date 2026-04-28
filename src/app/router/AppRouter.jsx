@@ -16,6 +16,7 @@ import {
 } from "../../staff/professor-ta-management/pages";
 import TeacherMessagesPage from "../../community/parent-to-teacher-communication/pages/TeacherMessagesPage";
 import MessagesPage from "../../community/parent-to-teacher-communication/pages/MessagesPage";
+import ParentMessagesPage from "../../community/parent-to-teacher-communication/pages/ParentMessagesPage";
 
 const AppRouter = () => (
   <Router>
@@ -70,6 +71,15 @@ const AppRouter = () => (
       element={
       <ProtectedRoute>
       <MessagesPage />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/parent/messages"
+  element={
+    <ProtectedRoute>
+      <ParentMessagesPage />
     </ProtectedRoute>
   }
 />
