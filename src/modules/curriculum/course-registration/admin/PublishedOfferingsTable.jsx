@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, Switch, Typography } from '@mui/material';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, Switch, Typography, Tooltip } from '@mui/material';
 import supabase, { isSupabaseConfigured } from '../../../../services/supabase/client';
 import EditIcon from '@mui/icons-material/Edit';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import { useNavigate } from 'react-router-dom';
 
 export default function PublishedOfferingsTable() {
   const [rows, setRows] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     let mounted = true;
@@ -68,9 +71,16 @@ export default function PublishedOfferingsTable() {
                   <Switch checked={r.published} onChange={(e) => togglePublish(r.id, e.target.checked)} />
                 </TableCell>
                 <TableCell align="right">
-                  <IconButton size="small">
-                    <EditIcon />
-                  </IconButton>
+                  <Tooltip title="View in LMS">
+                    <IconButton size="small" color="primary" onClick={() => navigate(`/lms/courses/${r.id}`)}>
+                      <MenuBookIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Edit Course Offering">
+                    <IconButton size="small">
+                      <EditIcon />
+                    </IconButton>
+                  </Tooltip>
                 </TableCell>
               </TableRow>
             ))
