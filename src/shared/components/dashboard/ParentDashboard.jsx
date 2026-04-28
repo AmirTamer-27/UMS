@@ -4,7 +4,7 @@ import QuickActions from "./QuickActions";
 import RecentActivityCard from "./RecentActivityCard";
 import SummaryCard from "./SummaryCard";
 
-const ParentDashboard = ({ data, loading }) => {
+const ParentDashboard = ({ data, loading, profile }) => {
   const cards = [
     {
       label: "Linked Students",
@@ -35,7 +35,12 @@ const ParentDashboard = ({ data, loading }) => {
           </Grid>
         ))}
       </Grid>
-      <QuickActions actions={[{ label: "Send Message" }]} />
+
+      <QuickActions
+        profile={profile}
+        actions={[{ label: "Send Message" }]}
+      />
+
       <RecentActivityCard>
         Teacher updates and replies to your messages will appear here.
       </RecentActivityCard>
