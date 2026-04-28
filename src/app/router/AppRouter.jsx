@@ -14,6 +14,8 @@ import {
   AdminCreateStaffPage,
   StaffProfilePage,
 } from "../../staff/professor-ta-management/pages";
+import TeacherMessagesPage from "../../community/parent-to-teacher-communication/pages/TeacherMessagesPage";
+import MessagesPage from "../../community/parent-to-teacher-communication/pages/MessagesPage";
 
 const AppRouter = () => (
   <Router>
@@ -52,6 +54,26 @@ const AppRouter = () => (
         path="/admin/staff/create"
       />
       <Route element={<AdminCourseOfferingPage />} path="/admin/course-offerings" />
+
+      
+      <Route
+        element={
+          <ProtectedRoute>
+            <TeacherMessagesPage />
+          </ProtectedRoute>
+        }
+        path="/teacher/messages"
+      />
+
+      <Route
+       path="/messages"
+      element={
+      <ProtectedRoute>
+      <MessagesPage />
+    </ProtectedRoute>
+  }
+/>
+
       <Route element={<Navigate replace to="/login" />} path="/" />
       <Route element={<Navigate replace to="/" />} path="*" />
     </Routes>

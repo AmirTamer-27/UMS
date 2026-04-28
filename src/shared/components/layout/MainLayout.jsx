@@ -1,4 +1,5 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import {
   AppBar,
@@ -36,9 +37,8 @@ const navigationIcons = {
 };
 
 const MainLayout = ({ children, profile }) => {
-  const location = useLocation();
-  const navigate = useNavigate();
-
+  const [activeItem, setActiveItem] = useState("Dashboard");
+  const navigate = useNavigate(); // added
   const role = profile?.role || "student";
   const displayName = profile?.name || profile?.full_name || "User";
   const initials = displayName
@@ -142,25 +142,29 @@ const MainLayout = ({ children, profile }) => {
         </Toolbar>
         <Divider />
         <List sx={{ p: 2 }}>
-          {navigation.map((item) => {
-            const isActive = getIsActive(item);
-            return (
-              <ListItemButton
-                key={item}
-                onClick={() => handleNavigation(item)}
-                selected={isActive}
-                sx={{
-                  borderRadius: 1,
-                  mb: 1,
-                  minHeight: 48,
-                  px: 1.5,
-                  color: isActive ? "primary.main" : "text.secondary",
-                  "&.Mui-selected": {
-                    bgcolor: "rgba(30, 58, 138, 0.08)",
-                    color: "primary.main",
-                    border: 1,
-                    borderColor: "rgba(30, 58, 138, 0.18)",
-                  },
+          {navigation.map((item) => (
+            <ListItemButton
+              key={item}
+              onClick={() => {
+                setActiveItem(item);
+
+                // navigation logic added
+                if (item === "Dashboard") navigate("/dashboard");
+                if (item === "Messages") navigate("/messages");
+              }}
+              selected={activeItem === item}
+              sx={{
+                borderRadius: 1,
+                mb: 1,
+                minHeight: 48,
+                px: 1.5,
+                color: activeItem === item ? "primary.main" : "text.secondary",
+                "&.Mui-selected": {
+                  bgcolor: "rgba(30, 58, 138, 0.08)",
+                  color: "primary.main",
+                  border: 1,
+                  borderColor: "rgba(30, 58, 138, 0.18)",
+                },
                 "&.Mui-selected:hover": {
                   bgcolor: "rgba(30, 58, 138, 0.12)",
                 },
@@ -181,7 +185,7 @@ const MainLayout = ({ children, profile }) => {
                 primaryTypographyProps={{ fontWeight: 800, variant: "body2" }}
               />
             </ListItemButton>
-            );
+          );
           })}
         </List>
       </Drawer>
