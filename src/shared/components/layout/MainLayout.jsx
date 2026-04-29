@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useMemo } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import {
   AppBar,
@@ -15,40 +16,54 @@ import {
   Toolbar,
   Typography,
 } from "@mui/material";
+
 import AdminPanelSettingsOutlinedIcon from "@mui/icons-material/AdminPanelSettingsOutlined";
 import ApartmentOutlinedIcon from "@mui/icons-material/ApartmentOutlined";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import LibraryBooksOutlinedIcon from "@mui/icons-material/LibraryBooksOutlined";
 import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import MessageOutlinedIcon from "@mui/icons-material/MessageOutlined";
+import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
 
 const drawerWidth = 240;
 
-const baseNavigation = ["Dashboard", "Courses", "LMS", "Rooms", "Messages"];
+const baseNavigation = [
+  { label: "Dashboard", path: "/dashboard", icon: DashboardOutlinedIcon },
+  { label: "Courses", path: "/courses/registration", icon: MenuBookOutlinedIcon },
+  { label: "LMS", path: "/lms", icon: LibraryBooksOutlinedIcon },
+  { label: "Rooms", path: "/facilities/classrooms", icon: ApartmentOutlinedIcon },
+  { label: "Messages", path: "/messages", icon: MessageOutlinedIcon },
+];
 
-const navigationIcons = {
-  Dashboard: DashboardOutlinedIcon,
-  Courses: MenuBookOutlinedIcon,
-  LMS: LibraryBooksOutlinedIcon,
-  Rooms: ApartmentOutlinedIcon,
-  Admin: AdminPanelSettingsOutlinedIcon,
-  Messages: MessageOutlinedIcon,
-};
+const adminNavigationItems = [
+  { label: "Students", path: "/admin/student-records", icon: PeopleAltOutlinedIcon },
+  { label: "Admin", path: "/admin/course-offerings", icon: AdminPanelSettingsOutlinedIcon },
+];
 
 const MainLayout = ({ children, profile }) => {
-  const [activeItem, setActiveItem] = useState("Dashboard");
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const role = profile?.role || "student";
   const displayName = profile?.name || profile?.full_name || "User";
+
   const initials = displayName
     .split(" ")
     .map((part) => part[0])
     .join("")
     .slice(0, 2)
     .toUpperCase();
-  const navigation =
-    role === "admin"
-      ? ["Dashboard", "Courses", "LMS", "Rooms", "Admin", "Messages"]
+
+  const navigation = useMemo(() => {
+    return role === "admin"
+      ? [...baseNavigation.slice(0, 4), ...adminNavigationItems, baseNavigation[4]]
       : baseNavigation;
+  }, [role]);
+
+  const getIsActive = (path) => {
+    if (path === "/dashboard") return location.pathname === "/dashboard";
+    return location.pathname.startsWith(path);
+  };
 
   return (
     <Box
@@ -71,7 +86,13 @@ const MainLayout = ({ children, profile }) => {
           ml: { md: `${drawerWidth}px` },
         }}
       >
-        <Toolbar sx={{ minHeight: 72, px: { xs: 2, md: 4 }, justifyContent: "space-between" }}>
+        <Toolbar
+          sx={{
+            minHeight: 72,
+            px: { xs: 2, md: 4 },
+            justifyContent: "space-between",
+          }}
+        >
           <Box>
             <Typography color="primary" fontWeight={800} variant="h6">
               University Management System
@@ -80,12 +101,17 @@ const MainLayout = ({ children, profile }) => {
               Academic operations dashboard
             </Typography>
           </Box>
+
           <Stack alignItems="center" direction="row" spacing={1.5}>
             <Chip
               color="secondary"
               label={role}
               size="small"
-              sx={{ borderRadius: 1, fontWeight: 700, textTransform: "capitalize" }}
+              sx={{
+                borderRadius: 1,
+                fontWeight: 700,
+                textTransform: "capitalize",
+              }}
             />
             <Avatar sx={{ bgcolor: "primary.main", fontWeight: 800 }}>
               {initials}
@@ -111,52 +137,58 @@ const MainLayout = ({ children, profile }) => {
         }}
       >
         <Toolbar sx={{ minHeight: 72, px: 3 }}>
-          <Stack spacing={0.25}>
-            <Typography color="primary" fontWeight={900} variant="h6">
-              UMS
-            </Typography>
-          </Stack>
+          <Typography color="primary" fontWeight={900} variant="h6">
+            UMS
+          </Typography>
         </Toolbar>
+
         <Divider />
+
         <List sx={{ p: 2 }}>
-          {navigation.map((item) => (
-            <ListItemButton
-              key={item}
-              onClick={() => setActiveItem(item)}
-              selected={activeItem === item}
-              sx={{
-                borderRadius: 1,
-                mb: 1,
-                minHeight: 48,
-                px: 1.5,
-                color: activeItem === item ? "primary.main" : "text.secondary",
-                "&.Mui-selected": {
-                  bgcolor: "rgba(30, 58, 138, 0.08)",
-                  color: "primary.main",
-                  border: 1,
-                  borderColor: "rgba(30, 58, 138, 0.18)",
-                },
-                "&.Mui-selected:hover": {
-                  bgcolor: "rgba(30, 58, 138, 0.12)",
-                },
-                "&:hover": {
-                  bgcolor: "rgba(15, 118, 110, 0.08)",
-                  color: "secondary.main",
-                },
-              }}
-            >
-              <ListItemIcon sx={{ color: "inherit", minWidth: 38 }}>
-                {(() => {
-                  const Icon = navigationIcons[item];
-                  return <Icon fontSize="small" />;
-                })()}
-              </ListItemIcon>
-              <ListItemText
-                primary={item}
-                primaryTypographyProps={{ fontWeight: 800, variant: "body2" }}
-              />
-            </ListItemButton>
-          ))}
+          {navigation.map((item) => {
+            const Icon = item.icon;
+            const isActive = getIsActive(item.path);
+
+            return (
+              <ListItemButton
+                key={item.label}
+                onClick={() => navigate(item.path)}
+                selected={isActive}
+                sx={{
+                  borderRadius: 1,
+                  mb: 1,
+                  minHeight: 48,
+                  px: 1.5,
+                  color: isActive ? "primary.main" : "text.secondary",
+                  "&.Mui-selected": {
+                    bgcolor: "rgba(30, 58, 138, 0.08)",
+                    color: "primary.main",
+                    border: 1,
+                    borderColor: "rgba(30, 58, 138, 0.18)",
+                  },
+                  "&.Mui-selected:hover": {
+                    bgcolor: "rgba(30, 58, 138, 0.12)",
+                  },
+                  "&:hover": {
+                    bgcolor: "rgba(15, 118, 110, 0.08)",
+                    color: "secondary.main",
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: "inherit", minWidth: 38 }}>
+                  <Icon fontSize="small" />
+                </ListItemIcon>
+
+                <ListItemText
+                  primary={item.label}
+                  primaryTypographyProps={{
+                    fontWeight: 800,
+                    variant: "body2",
+                  }}
+                />
+              </ListItemButton>
+            );
+          })}
         </List>
       </Drawer>
 

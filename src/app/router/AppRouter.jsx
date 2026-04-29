@@ -10,19 +10,14 @@ import { StudentCourseRegistrationPage } from "../../curriculum/core-elective-su
 import LoginPage from "../../modules/auth/login/pages/LoginPage";
 import Dashboard from "../Dashboard";
 import AdminCourseOfferingPage from "../../modules/curriculum/course-registration/admin/AdminCourseOfferingPage";
+import ClassroomsPage from "../../facilities/classroom-laboratory-management/pages/ClassroomsPage";
+import StudentRecordsPage from "../../facilities/administrative-office-automation/pages/StudentRecordsPage";
 
 const AppRouter = () => (
   <Router>
     <Routes>
       <Route element={<LoginPage />} path="/login" />
-      <Route
-        element={
-          <ProtectedRoute>
-            <StudentCourseRegistrationPage />
-          </ProtectedRoute>
-        }
-        path="/courses/registration"
-      />
+
       <Route
         element={
           <ProtectedRoute>
@@ -31,9 +26,45 @@ const AppRouter = () => (
         }
         path="/dashboard"
       />
-      <Route element={<AdminCourseOfferingPage />} path="/admin/course-offerings" />
+
+      <Route
+        element={
+          <ProtectedRoute>
+            <StudentCourseRegistrationPage />
+          </ProtectedRoute>
+        }
+        path="/courses/registration"
+      />
+
+      <Route
+        element={
+          <ProtectedRoute>
+            <ClassroomsPage />
+          </ProtectedRoute>
+        }
+        path="/facilities/classrooms"
+      />
+
+      <Route
+        element={
+          <ProtectedRoute>
+            <AdminCourseOfferingPage />
+          </ProtectedRoute>
+        }
+        path="/admin/course-offerings"
+      />
+
+      <Route
+        element={
+          <ProtectedRoute>
+            <StudentRecordsPage />
+          </ProtectedRoute>
+        }
+        path="/admin/student-records"
+      />
+
       <Route element={<Navigate replace to="/login" />} path="/" />
-      <Route element={<Navigate replace to="/" />} path="*" />
+      <Route element={<Navigate replace to="/login" />} path="*" />
     </Routes>
   </Router>
 );
