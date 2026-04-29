@@ -237,9 +237,10 @@ const RoleBasedDashboard = ({ profile, user }) => {
   }, [role, user?.id]);
 
   const dashboardProps = {
-    data,
-    loading: loadingData,
-  };
+  data,
+  loading: loadingData,
+  profile,  
+};
 
   const roleDashboard = {
     student: <StudentDashboard {...dashboardProps} />,
