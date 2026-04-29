@@ -16,41 +16,53 @@ import {
   Toolbar,
   Typography,
 } from "@mui/material";
+
 import AdminPanelSettingsOutlinedIcon from "@mui/icons-material/AdminPanelSettingsOutlined";
 import ApartmentOutlinedIcon from "@mui/icons-material/ApartmentOutlined";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import LibraryBooksOutlinedIcon from "@mui/icons-material/LibraryBooksOutlined";
 import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import MessageOutlinedIcon from "@mui/icons-material/MessageOutlined";
+import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
 
 const drawerWidth = 240;
 
-const baseNavigation = ["Dashboard", "Courses", "LMS", "Rooms", "Messages"];
+const baseNavigation = [
+  { label: "Dashboard", path: "/dashboard", icon: DashboardOutlinedIcon },
+  { label: "Courses", path: "/courses/registration", icon: MenuBookOutlinedIcon },
+  { label: "LMS", path: "/lms", icon: LibraryBooksOutlinedIcon },
+  { label: "Rooms", path: "/facilities/classrooms", icon: ApartmentOutlinedIcon },
+  { label: "Messages", path: "/messages", icon: MessageOutlinedIcon },
+];
 
-const navigationIcons = {
-  Dashboard: DashboardOutlinedIcon,
-  Courses: MenuBookOutlinedIcon,
-  LMS: LibraryBooksOutlinedIcon,
-  Rooms: ApartmentOutlinedIcon,
-  Admin: AdminPanelSettingsOutlinedIcon,
-  Messages: MessageOutlinedIcon,
-};
+const adminNavigationItems = [
+  { label: "Students", path: "/admin/student-records", icon: PeopleAltOutlinedIcon },
+  { label: "Admin", path: "/admin/course-offerings", icon: AdminPanelSettingsOutlinedIcon },
+];
 
 const MainLayout = ({ children, profile }) => {
   const [activeItem, setActiveItem] = useState("Dashboard");
   const navigate = useNavigate(); // added
   const role = profile?.role || "student";
   const displayName = profile?.name || profile?.full_name || "User";
+
   const initials = displayName
     .split(" ")
     .map((part) => part[0])
     .join("")
     .slice(0, 2)
     .toUpperCase();
-  const navigation =
-    role === "admin"
-      ? ["Dashboard", "Courses", "LMS", "Rooms", "Admin", "Messages"]
+
+  const navigation = useMemo(() => {
+    return role === "admin"
+      ? [...baseNavigation.slice(0, 4), ...adminNavigationItems, baseNavigation[4]]
       : baseNavigation;
+  }, [role]);
+
+  const getIsActive = (path) => {
+    if (path === "/dashboard") return location.pathname === "/dashboard";
+    return location.pathname.startsWith(path);
+  };
 
   return (
     <Box
@@ -73,7 +85,13 @@ const MainLayout = ({ children, profile }) => {
           ml: { md: `${drawerWidth}px` },
         }}
       >
-        <Toolbar sx={{ minHeight: 72, px: { xs: 2, md: 4 }, justifyContent: "space-between" }}>
+        <Toolbar
+          sx={{
+            minHeight: 72,
+            px: { xs: 2, md: 4 },
+            justifyContent: "space-between",
+          }}
+        >
           <Box>
             <Typography color="primary" fontWeight={800} variant="h6">
               University Management System
@@ -82,12 +100,17 @@ const MainLayout = ({ children, profile }) => {
               Academic operations dashboard
             </Typography>
           </Box>
+
           <Stack alignItems="center" direction="row" spacing={1.5}>
             <Chip
               color="secondary"
               label={role}
               size="small"
-              sx={{ borderRadius: 1, fontWeight: 700, textTransform: "capitalize" }}
+              sx={{
+                borderRadius: 1,
+                fontWeight: 700,
+                textTransform: "capitalize",
+              }}
             />
             <Avatar sx={{ bgcolor: "primary.main", fontWeight: 800 }}>
               {initials}
@@ -113,13 +136,13 @@ const MainLayout = ({ children, profile }) => {
         }}
       >
         <Toolbar sx={{ minHeight: 72, px: 3 }}>
-          <Stack spacing={0.25}>
-            <Typography color="primary" fontWeight={900} variant="h6">
-              UMS
-            </Typography>
-          </Stack>
+          <Typography color="primary" fontWeight={900} variant="h6">
+            UMS
+          </Typography>
         </Toolbar>
+
         <Divider />
+
         <List sx={{ p: 2 }}>
           {navigation.map((item) => (
             <ListItemButton

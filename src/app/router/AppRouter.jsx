@@ -17,11 +17,23 @@ import {
 import TeacherMessagesPage from "../../community/parent-to-teacher-communication/pages/TeacherMessagesPage";
 import MessagesPage from "../../community/parent-to-teacher-communication/pages/MessagesPage";
 import ParentMessagesPage from "../../community/parent-to-teacher-communication/pages/ParentMessagesPage";
+import ClassroomsPage from "../../facilities/classroom-laboratory-management/pages/ClassroomsPage";
+import StudentRecordsPage from "../../facilities/administrative-office-automation/pages/StudentRecordsPage";
 
 const AppRouter = () => (
   <Router>
     <Routes>
       <Route element={<LoginPage />} path="/login" />
+
+      <Route
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+        path="/dashboard"
+      />
+
       <Route
         element={
           <ProtectedRoute>
@@ -30,13 +42,32 @@ const AppRouter = () => (
         }
         path="/courses/registration"
       />
+
       <Route
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <ClassroomsPage />
           </ProtectedRoute>
         }
-        path="/dashboard"
+        path="/facilities/classrooms"
+      />
+
+      <Route
+        element={
+          <ProtectedRoute>
+            <AdminCourseOfferingPage />
+          </ProtectedRoute>
+        }
+        path="/admin/course-offerings"
+      />
+
+      <Route
+        element={
+          <ProtectedRoute>
+            <StudentRecordsPage />
+          </ProtectedRoute>
+        }
+        path="/admin/student-records"
       />
       <Route
         element={
@@ -54,9 +85,9 @@ const AppRouter = () => (
         }
         path="/admin/staff/create"
       />
-      <Route element={<AdminCourseOfferingPage />} path="/admin/course-offerings" />
 
-      
+
+
       <Route
         element={
           <ProtectedRoute>
@@ -67,25 +98,25 @@ const AppRouter = () => (
       />
 
       <Route
-       path="/messages"
-      element={
-      <ProtectedRoute>
-      <MessagesPage />
-    </ProtectedRoute>
-  }
-/>
+        path="/messages"
+        element={
+          <ProtectedRoute>
+            <MessagesPage />
+          </ProtectedRoute>
+        }
+      />
 
-<Route
-  path="/parent/messages"
-  element={
-    <ProtectedRoute>
-      <ParentMessagesPage />
-    </ProtectedRoute>
-  }
-/>
+      <Route
+        path="/parent/messages"
+        element={
+          <ProtectedRoute>
+            <ParentMessagesPage />
+          </ProtectedRoute>
+        }
+      />
 
       <Route element={<Navigate replace to="/login" />} path="/" />
-      <Route element={<Navigate replace to="/" />} path="*" />
+      <Route element={<Navigate replace to="/login" />} path="*" />
     </Routes>
   </Router>
 );
