@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconB
 import supabase, { isSupabaseConfigured } from '../../../../services/supabase/client';
 import EditIcon from '@mui/icons-material/Edit';
 
-export default function PublishedOfferingsTable() {
+export default function PublishedOfferingsTable({ refreshKey = 0 }) {
   const [rows, setRows] = useState([]);
 
   useEffect(() => {
@@ -13,7 +13,7 @@ export default function PublishedOfferingsTable() {
           if (isSupabaseConfigured && supabase) {
             const { data, error } = await supabase
               .from('course_offerings')
-              .select('id, semester_id, seat_limit, published, created_at, course:course_id(name)')
+              .select('id, semester_id, seat_limit, published, created_at, course:course_id(name), semester:semester_id(name)')
               .order('created_at', { ascending: false });
             if (error) return console.error(error);
             if (mounted) setRows(data || []);
@@ -26,7 +26,7 @@ export default function PublishedOfferingsTable() {
     }
     load();
     return () => (mounted = false);
-  }, []);
+  }, [refreshKey]);
 
   async function togglePublish(id, value) {
     if (!isSupabaseConfigured || !supabase) return console.error('Supabase not configured');
@@ -62,7 +62,7 @@ export default function PublishedOfferingsTable() {
             rows.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell>{r.course?.name || r.course?.title || r.course?.course_name || '—'}</TableCell>
-                  <TableCell>{r.semester_id || (r.created_at ? new Date(r.created_at).toLocaleString() : '—')}</TableCell>
+                  <TableCell>{r.semester?.name || r.semester_id || '—'}</TableCell>
                   <TableCell>{r.seat_limit}</TableCell>
                 <TableCell>
                   <Switch checked={r.published} onChange={(e) => togglePublish(r.id, e.target.checked)} />

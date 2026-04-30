@@ -1,4 +1,5 @@
 import { Grid, Stack } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
 import QuickActions from "./QuickActions";
 import RecentActivityCard from "./RecentActivityCard";
@@ -7,6 +8,7 @@ import SummaryCard from "./SummaryCard";
 const countValue = (value) => (Array.isArray(value) ? value.length : value || 0);
 
 const AdminDashboard = ({ data, loading }) => {
+  const navigate = useNavigate();
   const totalCourses = countValue(data.courses);
   const totalStudents = countValue(data.studentProfiles);
   const totalStaff = countValue(data.staffProfiles);
@@ -52,7 +54,11 @@ const AdminDashboard = ({ data, loading }) => {
         actions={[
           { label: "Create Student" },
           { label: "Update Student", color: "secondary", variant: "outlined" },
-          { label: "Create Staff", color: "warning" },
+          {
+            label: "Create Staff",
+            color: "warning",
+            onClick: () => navigate("/admin/staff/create"),
+          },
         ]}
       />
       <RecentActivityCard>

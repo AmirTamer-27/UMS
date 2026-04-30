@@ -7,6 +7,7 @@ import SummaryCard from "./SummaryCard";
 
 const InstructorDashboard = ({ data, loading }) => {
   const navigate = useNavigate();
+
   const cards = [
     {
       label: "My Course Offerings",
@@ -37,6 +38,7 @@ const InstructorDashboard = ({ data, loading }) => {
       value: data.messages?.length || 0,
       helper: "parents",
       accent: "secondary",
+      onClick: () => navigate("/teacher/messages"), // added navigation
     },
   ];
 
@@ -45,10 +47,16 @@ const InstructorDashboard = ({ data, loading }) => {
       <Grid container spacing={3} alignItems="stretch" sx={{ width: "100%", m: 0 }}>
         {cards.map((card) => (
           <Grid item key={card.label} xs={12} sm={6} md={4} lg={3}>
-            <SummaryCard {...card} value={loading ? "..." : card.value} />
+            <div
+              onClick={card.onClick}
+              style={{ cursor: card.onClick ? "pointer" : "default" }}
+            >
+              <SummaryCard {...card} value={loading ? "..." : card.value} />
+            </div>
           </Grid>
         ))}
       </Grid>
+
       <QuickActions
         actions={[
           { label: "Upload Material" },
@@ -57,6 +65,7 @@ const InstructorDashboard = ({ data, loading }) => {
           { label: "Send Message", color: "secondary", variant: "outlined", onClick: () => navigate("/teacher/messages") },
         ]}
       />
+
       <RecentActivityCard>
         New submissions, parent messages, and material uploads will appear here.
       </RecentActivityCard>

@@ -7,6 +7,7 @@ import SummaryCard from "./SummaryCard";
 
 const ParentDashboard = ({ data, loading }) => {
   const navigate = useNavigate();
+const ParentDashboard = ({ data, loading, profile }) => {
   const cards = [
     {
       label: "Linked Students",
@@ -38,6 +39,12 @@ const ParentDashboard = ({ data, loading }) => {
         ))}
       </Grid>
       <QuickActions actions={[{ label: "Send Message", onClick: () => navigate("/parent/messages") }]} />
+
+      <QuickActions
+        profile={profile}
+        actions={[{ label: "Send Message" }]}
+      />
+
       <RecentActivityCard>
         Teacher updates and replies to your messages will appear here.
       </RecentActivityCard>

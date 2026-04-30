@@ -10,8 +10,12 @@ const MessagesPage = () => {
   const [conversationsMap, setConversationsMap] = useState({});
 
   useEffect(() => {
-    if (!user) return;
     const loadData = async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const currentUser = userData?.user;
+      setUser(currentUser);
+
+      if (!currentUser) return;
 
       const { data: conversations } = await supabase
         .from("conversations")
@@ -52,6 +56,7 @@ const MessagesPage = () => {
 
     loadData();
   }, [user]);
+ 
 
   return (
     <Box p={3}>
@@ -68,11 +73,13 @@ const MessagesPage = () => {
             const conv = conversationsMap[msg.conversation_id];
 
             let label = "User";
+
             if (isMe) {
               const receiverId =
                 conv?.teacher_user_id === user?.id
                   ? conv?.parent_user_id
                   : conv?.teacher_user_id;
+
               const receiver = profilesMap[receiverId];
               label = `Sent to ${receiver?.full_name || "User"}`;
             } else {
@@ -97,14 +104,25 @@ const MessagesPage = () => {
                       {new Date(msg.created_at).toLocaleString()}
                     </Typography>
                   </Box>
+
+                  {/* Message */}
                   <Typography
                     variant="body2"
-                    sx={{ mt: 0.5, color: "text.secondary", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                    sx={{
+                      mt: 0.5,
+                      color: "text.secondary",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
                   >
                     {msg.message_body}
                   </Typography>
                 </Box>
-                {index !== messages.length - 1 && <Divider sx={{ opacity: 0.6 }} />}
+
+                {index !== messages.length - 1 && (
+                  <Divider sx={{ opacity: 0.6 }} />
+                )}
               </Box>
             );
           })

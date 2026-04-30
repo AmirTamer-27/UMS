@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { Grid, TextField, Button, Stack, Typography } from '@mui/material';
+import { Alert, Grid, TextField, Button, MenuItem, Stack } from '@mui/material';
 import SeatLimitField from './SeatLimitField';
 import PrerequisiteSelector from './PrerequisiteSelector';
 import supabase, { isSupabaseConfigured } from '../../../../services/supabase/client';
 import offeringQueue from './offeringQueue';
 import { Autocomplete, TextField as MuiTextField } from '@mui/material';
 
-export default function OfferingForm() {
+export default function OfferingForm({ onOfferingCreated }) {
   const [courses, setCourses] = useState([]);
   const [semesters, setSemesters] = useState([]);
   const [courseInput, setCourseInput] = useState('');
-  const [semesterInput, setSemesterInput] = useState('');
-  const [form, setForm] = useState({ course_id: '', semester_id: '', seats: 0, prerequisites: [] });
+  const [form, setForm] = useState({ course_id: '', semester_id: '', seats: '', prerequisites: [] });
+  const [message, setMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     let mounted = true;
@@ -49,7 +50,15 @@ export default function OfferingForm() {
             console.error('Failed to load semesters', error);
             return;
           }
-          if (mounted) setSemesters(data || []);
+          if (mounted) {
+            const nextSemesters = data || [];
+            setSemesters(nextSemesters);
+            const activeSemester = nextSemesters.find((semester) => semester.is_active);
+            setForm((currentForm) => ({
+              ...currentForm,
+              semester_id: currentForm.semester_id || activeSemester?.id || nextSemesters[0]?.id || '',
+            }));
+          }
         }
       } catch (err) {
         console.error(err);
@@ -66,7 +75,13 @@ export default function OfferingForm() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!isSupabaseConfigured || !supabase) return console.error('Supabase is not configured');
+    setMessage('');
+    setErrorMessage('');
+
+    if (!isSupabaseConfigured || !supabase) {
+      setErrorMessage('Supabase is not configured.');
+      return;
+    }
 
     try {
       // determine course id: if form.course_id already set use it, else try to create a course from courseInput
@@ -74,7 +89,7 @@ export default function OfferingForm() {
       if (!courseId) {
         const name = (courseInput || '').trim();
         if (!name) {
-          console.error('No course selected or provided');
+          setErrorMessage('Select a course before creating an offering.');
           return;
         }
         // Check for existing course by name to avoid duplicates
@@ -83,7 +98,10 @@ export default function OfferingForm() {
           .select('id')
           .eq('name', name)
           .maybeSingle();
-        if (existingErr) return console.error(existingErr);
+        if (existingErr) {
+          setErrorMessage(existingErr.message);
+          return;
+        }
         if (existing && existing.id) {
           courseId = existing.id;
         } else {
@@ -108,109 +126,75 @@ export default function OfferingForm() {
             if (courseErr?.code === '42501' || courseErr?.status === 401 || courseErr?.message?.toLowerCase?.().includes('row-level security')) {
               const queued = offeringQueue.enqueueOffering({
                 course: { name, code, credit_hours: 3, course_type: 'core' },
-                payload: { course_id: null, semester_id: form.semester_id, seat_limit: form.seats, published: false },
+                payload: { course_id: null, semester_id: form.semester_id, seat_limit: Number(form.seats), published: false },
                 prerequisites: form.prerequisites,
               });
               console.warn('Course creation blocked by RLS/auth — offering queued locally (#' + queued + ')');
               // Reset form for user to continue using UI; queued items will be retried when policies/keys are fixed
-              setForm({ course_id: '', semester_id: '', seats: 0, prerequisites: [] });
+              setForm((currentForm) => ({ course_id: '', semester_id: currentForm.semester_id, seats: '', prerequisites: [] }));
               setCourseInput('');
               return;
             }
-            return console.error(courseErr);
+            setErrorMessage(courseErr.message);
+            return;
           }
           courseId = courseData?.[0]?.id;
         }
       }
-      // determine semester id: if form.semester_id already set use it, else try to find/create by semesterInput
-      let semesterId = form.semester_id;
-      if (!semesterId) {
-        const semName = (semesterInput || '').trim();
-        if (!semName) {
-          console.error('No semester selected or provided');
-          return;
-        }
-        const { data: existingSem, error: existingSemErr } = await supabase
-          .from('semesters')
-          .select('id')
-          .eq('name', semName)
-          .maybeSingle();
-        if (existingSemErr) {
-          console.error(existingSemErr);
-          // If RLS blocks reads, queue the offering
-          const queued = offeringQueue.enqueueOffering({
-            course: courseId ? null : { name: courseInput || '', code: '', credit_hours: 3, course_type: 'core' },
-            payload: { course_id: courseId || null, semester_input: semName, seat_limit: form.seats, published: false },
-            prerequisites: form.prerequisites,
-          });
-          console.warn('Semester lookup blocked — offering queued locally (#' + queued + ')');
-          setForm({ course_id: '', semester_id: '', seats: 0, prerequisites: [] });
-          setCourseInput('');
-          setSemesterInput('');
-          return;
-        }
-        if (existingSem && existingSem.id) {
-          semesterId = existingSem.id;
-        } else {
-          // create a semester with sensible default dates (required by schema)
-          const today = new Date();
-          const start = today.toISOString().slice(0, 10);
-          const endDate = new Date(today.getTime() + 1000 * 60 * 60 * 24 * 120);
-          const end = endDate.toISOString().slice(0, 10);
-          const { data: newSem, error: newSemErr } = await supabase
-            .from('semesters')
-            .insert({ name: semName, start_date: start, end_date: end, is_active: false })
-            .select();
-          if (newSemErr) {
-            console.error(newSemErr);
-            if (newSemErr?.code === '42501' || newSemErr?.status === 401) {
-              const queued = offeringQueue.enqueueOffering({
-                course: courseId ? null : { name: courseInput || '', code: '', credit_hours: 3, course_type: 'core' },
-                payload: { course_id: courseId || null, semester_input: semName, seat_limit: form.seats, published: false },
-                prerequisites: form.prerequisites,
-              });
-              console.warn('Semester creation blocked by RLS/auth — offering queued locally (#' + queued + ')');
-              setForm({ course_id: '', semester_id: '', seats: 0, prerequisites: [] });
-              setCourseInput('');
-              setSemesterInput('');
-              return;
-            }
-            return;
-          }
-          semesterId = newSem?.[0]?.id;
-        }
-      }
+      const semesterId = form.semester_id;
+      const seatLimit = Number(form.seats);
 
       // Validate required UUID fields before sending to Supabase
       if (!courseId) {
-        console.error('Cannot create offering: no course selected or created');
+        setErrorMessage('Cannot create offering: no course selected or created.');
         return;
       }
       if (!semesterId) {
-        console.error('Cannot create offering: no semester selected/created');
+        setErrorMessage('Select a semester before creating an offering.');
+        return;
+      }
+      if (!Number.isInteger(seatLimit) || seatLimit <= 0) {
+        setErrorMessage('Enter a valid seat limit greater than 0.');
+        return;
+      }
+
+      const { data: duplicateOffering, error: duplicateError } = await supabase
+        .from('course_offerings')
+        .select('id')
+        .eq('course_id', courseId)
+        .eq('semester_id', semesterId)
+        .maybeSingle();
+
+      if (duplicateError) {
+        setErrorMessage(duplicateError.message);
+        return;
+      }
+
+      if (duplicateOffering) {
+        setErrorMessage('This course already has an offering in the selected semester.');
         return;
       }
 
       const payload = {
         course_id: courseId,
         semester_id: semesterId,
-        seat_limit: form.seats,
+        seat_limit: seatLimit,
         published: false,
       };
 
       const { data, error } = await supabase.from('course_offerings').insert(payload).select();
       if (error) {
-        console.error(error);
         if (error?.code === '42501' || error?.status === 401) {
           // Queue full offering for later retry
           const queued = offeringQueue.enqueueOffering({
             courseId, payload, prerequisites: form.prerequisites,
           });
           console.warn('Offering creation blocked by RLS/auth — queued locally (#' + queued + ')');
-          setForm({ course_id: '', semester_id: '', seats: 0, prerequisites: [] });
+          setForm((currentForm) => ({ course_id: '', semester_id: currentForm.semester_id, seats: '', prerequisites: [] }));
           setCourseInput('');
           return;
         }
+        setErrorMessage(error.message);
         return;
       }
 
@@ -220,20 +204,27 @@ export default function OfferingForm() {
         if (preErr) console.error(preErr);
       }
 
-      setForm({ course_id: '', semester_id: '', seats: 0, prerequisites: [] });
+      setForm((currentForm) => ({ course_id: '', semester_id: currentForm.semester_id, seats: '', prerequisites: [] }));
       setCourseInput('');
-      setSemesterInput('');
+      setMessage('Course offering created successfully.');
+      onOfferingCreated?.();
     } catch (err) {
-      console.error(err);
+      setErrorMessage(err.message || 'Unable to create course offering.');
     }
   }
 
   function handleCancel() {
-    setForm({ course_id: '', semester_id: '', seats: 0, prerequisites: [] });
+    setForm((currentForm) => ({ course_id: '', semester_id: currentForm.semester_id, seats: '', prerequisites: [] }));
+    setCourseInput('');
+    setMessage('');
+    setErrorMessage('');
   }
 
   return (
     <form onSubmit={handleSubmit}>
+      <Stack spacing={2}>
+        {message ? <Alert severity="success">{message}</Alert> : null}
+        {errorMessage ? <Alert severity="error">{errorMessage}</Alert> : null}
       <Grid container spacing={2}>
         <Grid item xs={12} md={6}>
           <Autocomplete
@@ -266,20 +257,24 @@ export default function OfferingForm() {
 
         <Grid item xs={12} md={6}>
           <TextField
+            select
             fullWidth
             label="Semester"
-            name="semesterInput"
-            value={semesterInput}
-            onChange={(e) => {
-              setSemesterInput(e.target.value);
-              setForm((s) => ({ ...s, semester_id: '' }));
-            }}
+            name="semester_id"
+            value={form.semester_id}
+            onChange={handleChange}
             helperText={
               semesters.length === 0
-                ? "No semesters found. You can type a new semester (e.g. '2026 Spring')."
-                : "Type a semester name or leave empty to pick an existing one."
+                ? 'No semesters found.'
+                : 'Active semester is selected automatically. Choose another if needed.'
             }
-          />
+          >
+            {semesters.map((semester) => (
+              <MenuItem key={semester.id} value={semester.id}>
+                {semester.name}{semester.is_active ? ' (Active)' : ''}
+              </MenuItem>
+            ))}
+          </TextField>
         </Grid>
 
         <Grid item xs={12} md={6}>
@@ -292,11 +287,12 @@ export default function OfferingForm() {
 
         <Grid item xs={12}>
           <Stack direction="row" spacing={2} justifyContent="flex-end">
-            <Button variant="outlined">Cancel</Button>
+            <Button onClick={handleCancel} variant="outlined">Cancel</Button>
             <Button type="submit" variant="contained" color="primary">Create Offering</Button>
           </Stack>
         </Grid>
       </Grid>
+      </Stack>
     </form>
   );
 }
