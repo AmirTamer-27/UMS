@@ -21,7 +21,7 @@ import ClassroomsPage from "../../facilities/classroom-laboratory-management/pag
 import StudentRecordsPage from "../../facilities/administrative-office-automation/pages/StudentRecordsPage";
 
 const AppRouter = () => (
-  <Router>
+  <Router future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
     <Routes>
       <Route element={<LoginPage />} path="/login" />
 

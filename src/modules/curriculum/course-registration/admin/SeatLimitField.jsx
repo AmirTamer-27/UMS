@@ -6,10 +6,12 @@ export default function SeatLimitField({ value = 0, onChange }) {
     <TextField
       fullWidth
       label="Seat limit"
-      type="number"
-      inputProps={{ min: 0 }}
+      inputMode="numeric"
       value={value}
-      onChange={(e) => onChange(Number(e.target.value || 0))}
+      onChange={(e) => {
+        const nextValue = e.target.value.replace(/\D/g, '');
+        onChange(nextValue);
+      }}
     />
   );
 }

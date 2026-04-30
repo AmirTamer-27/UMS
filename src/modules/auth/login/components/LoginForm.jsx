@@ -9,10 +9,11 @@ import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 
-import { supabase } from "../../../../services/supabase";
+import { useAuth } from "../../../../context/AuthContext";
 
 const LoginForm = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -27,27 +28,18 @@ const LoginForm = () => {
       return;
     }
 
-    if (!supabase) {
-      setError("Supabase is not configured. Add your Supabase credentials.");
-      return;
-    }
-
     setLoading(true);
 
-    const { data, error: loginError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const data = await login({ email, password });
 
-    setLoading(false);
-
-    if (loginError) {
+      if (data?.user) {
+        navigate("/dashboard");
+      }
+    } catch (loginError) {
       setError(loginError.message);
-      return;
-    }
-
-    if (data?.user) {
-      navigate("/dashboard");
+    } finally {
+      setLoading(false);
     }
   };
 

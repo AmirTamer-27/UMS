@@ -23,25 +23,36 @@ const actionIcons = {
   "Send Message": MessageOutlinedIcon,
 };
 
+const actionRoutes = {
+  "Browse Courses": "/courses/registration",
+  "My Registrations": "/courses/registration",
+  "Create Student": "/admin/student-records",
+  "Update Student": "/admin/student-records",
+  "Create Staff": "/admin/staff/create",
+};
+
 const QuickActions = ({ actions, profile }) => {
   const navigate = useNavigate();
 
   const handleClick = (action) => {
-    // if action already has onClick → use it
     if (action.onClick) {
       action.onClick();
       return;
     }
 
-    // fallback logic
     if (action.label === "Send Message") {
       if (profile?.role === "parent") {
         navigate("/parent/messages");
       } else {
         navigate("/teacher/messages");
       }
+      return;
     }
-    
+
+    const route = action.to || actionRoutes[action.label];
+    if (route) {
+      navigate(route);
+    }
   };
 
   return (
