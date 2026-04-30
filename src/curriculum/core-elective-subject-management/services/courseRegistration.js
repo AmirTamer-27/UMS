@@ -1,6 +1,8 @@
 import { supabase } from "../../../services/supabase/client";
 
 const QUERY_TIMEOUT_MS = 10000;
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const requireSupabase = () => {
   if (!supabase) {
@@ -32,9 +34,25 @@ const withTimeout = async (promise, label) => {
   }
 };
 
+const fetchRows = async (query) => {
+  const { data, error } = await query;
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+};
+
 const getStudentContext = async (client, profile) => {
   if (!profile?.id) {
     throw new Error("No authenticated profile was available.");
+  }
+
+  if (!UUID_PATTERN.test(profile.department_id || "")) {
+    throw new Error(
+      "Your student profile is missing a valid department. Ask an admin to update your student record.",
+    );
   }
 
   const {
@@ -167,6 +185,21 @@ const getRegisteredCounts = async (client, offeringIds) => {
   return counts;
 };
 
+const getStudentRegistrations = async (client, studentUserId, offeringIds) => {
+  if (!offeringIds.length) {
+    return [];
+  }
+
+  return fetchRows(
+    client
+      .from("registrations")
+      .select("id, course_offering_id, status, created_at")
+      .eq("student_user_id", studentUserId)
+      .in("course_offering_id", offeringIds)
+      .in("status", ["selected", "registered"]),
+  );
+};
+
 export const courseRegistrationService = {
   getAvailableCoursesForStudent: async (profile) => {
     if (!profile?.id) {
@@ -212,7 +245,7 @@ export const courseRegistrationService = {
       coursesById.has(offering.course_id),
     );
 
-    const [instructorNames, registeredCounts] = await withTimeout(
+    const [instructorNames, registeredCounts, studentRegistrations] = await withTimeout(
       Promise.all([
         getInstructorMap(
           client,
@@ -228,8 +261,19 @@ export const courseRegistrationService = {
           client,
           matchingOfferings.map((offering) => offering.id),
         ),
+        getStudentRegistrations(
+          client,
+          profile.id,
+          matchingOfferings.map((offering) => offering.id),
+        ),
       ]),
       "Loading instructors and registration counts",
+    );
+    const registrationsByOfferingId = new Map(
+      studentRegistrations.map((registration) => [
+        registration.course_offering_id,
+        registration,
+      ]),
     );
 
     return {
@@ -259,8 +303,85 @@ export const courseRegistrationService = {
           seatLimit,
           registeredCount,
           availableSeats: Math.max(seatLimit - registeredCount, 0),
+          registration: registrationsByOfferingId.get(offering.id) || null,
+          registrationStatus:
+            registrationsByOfferingId.get(offering.id)?.status || null,
         };
       }),
     };
+  },
+
+  selectCourse: async ({ courseOfferingId, studentUserId }) => {
+    const client = requireSupabase();
+
+    const { data: existingRegistration, error: existingError } = await client
+      .from("registrations")
+      .select("id, status")
+      .eq("student_user_id", studentUserId)
+      .eq("course_offering_id", courseOfferingId)
+      .maybeSingle();
+
+    if (existingError) {
+      throw existingError;
+    }
+
+    if (existingRegistration?.status === "registered") {
+      throw new Error("This course is already registered.");
+    }
+
+    if (existingRegistration) {
+      const { error } = await client
+        .from("registrations")
+        .update({ status: "selected" })
+        .eq("id", existingRegistration.id);
+
+      if (error) {
+        throw error;
+      }
+
+      return;
+    }
+
+    const { error } = await client.from("registrations").insert({
+      student_user_id: studentUserId,
+      course_offering_id: courseOfferingId,
+      status: "selected",
+    });
+
+    if (error) {
+      throw error;
+    }
+  },
+
+  removeSelectedCourse: async ({ courseOfferingId, studentUserId }) => {
+    const client = requireSupabase();
+    const { error } = await client
+      .from("registrations")
+      .delete()
+      .eq("student_user_id", studentUserId)
+      .eq("course_offering_id", courseOfferingId)
+      .eq("status", "selected");
+
+    if (error) {
+      throw error;
+    }
+  },
+
+  registerSelectedCourses: async ({ courseOfferingIds, studentUserId }) => {
+    if (!courseOfferingIds.length) {
+      throw new Error("Select at least one course before registering.");
+    }
+
+    const client = requireSupabase();
+    const { error } = await client
+      .from("registrations")
+      .update({ status: "registered" })
+      .eq("student_user_id", studentUserId)
+      .in("course_offering_id", courseOfferingIds)
+      .eq("status", "selected");
+
+    if (error) {
+      throw error;
+    }
   },
 };

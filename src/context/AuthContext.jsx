@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -19,6 +20,16 @@ export const AuthProvider = ({ children }) => {
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const profileRef = useRef(null);
+  const sessionRef = useRef(null);
+
+  useEffect(() => {
+    profileRef.current = profile;
+  }, [profile]);
+
+  useEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
 
   const withTimeout = useCallback(async (promise, label) => {
     let timeoutId;
@@ -68,6 +79,12 @@ export const AuthProvider = ({ children }) => {
     [loadProfile],
   );
 
+  const isSameUser = useCallback((nextSession) => {
+    const currentSession = sessionRef.current;
+
+    return currentSession?.user?.id === nextSession?.user?.id;
+  }, []);
+
   useEffect(() => {
     let isActive = true;
 
@@ -103,14 +120,36 @@ export const AuthProvider = ({ children }) => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
       if (!isActive) {
         return;
       }
 
       try {
-        setLoading(true);
         setError(null);
+
+        const isQuietSameUserEvent =
+          (event === "TOKEN_REFRESHED" ||
+            event === "SIGNED_IN" ||
+            event === "USER_UPDATED") &&
+          isSameUser(nextSession) &&
+          profileRef.current;
+
+        if (isQuietSameUserEvent) {
+          setSession(nextSession ?? null);
+          setUser(nextSession?.user ?? null);
+          return;
+        }
+
+        const shouldBlockForAuthChange =
+          event === "SIGNED_OUT" ||
+          !nextSession?.user ||
+          !profileRef.current;
+
+        if (shouldBlockForAuthChange) {
+          setLoading(true);
+        }
+
         await applySession(nextSession);
       } catch (authError) {
         setError(authError.message);
@@ -123,7 +162,7 @@ export const AuthProvider = ({ children }) => {
       isActive = false;
       subscription.unsubscribe();
     };
-  }, [applySession]);
+  }, [applySession, isSameUser]);
 
   const login = useCallback(
     async ({ email, password }) => {

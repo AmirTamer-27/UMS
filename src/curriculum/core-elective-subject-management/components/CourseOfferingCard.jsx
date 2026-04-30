@@ -1,10 +1,11 @@
 import Chip from "@mui/material/Chip";
 import Divider from "@mui/material/Divider";
+import Button from "@mui/material/Button";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 
-const CourseOfferingCard = ({ course }) => (
+const CourseOfferingCard = ({ actionLabel, actionProps = {}, course }) => (
   <Paper
     elevation={0}
     sx={{
@@ -55,6 +56,11 @@ const CourseOfferingCard = ({ course }) => (
           <Typography sx={{ color: "text.secondary", fontSize: "0.875rem" }}>
             {course.registeredCount} / {course.seatLimit} registered
           </Typography>
+          {actionLabel ? (
+            <Button size="small" sx={{ mt: 1 }} variant="contained" {...actionProps}>
+              {actionLabel}
+            </Button>
+          ) : null}
         </Stack>
       </Stack>
 

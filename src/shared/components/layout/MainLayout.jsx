@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMemo } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import {
   AppBar,
@@ -20,17 +20,18 @@ import {
 import AdminPanelSettingsOutlinedIcon from "@mui/icons-material/AdminPanelSettingsOutlined";
 import ApartmentOutlinedIcon from "@mui/icons-material/ApartmentOutlined";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
-import LibraryBooksOutlinedIcon from "@mui/icons-material/LibraryBooksOutlined";
 import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import MessageOutlinedIcon from "@mui/icons-material/MessageOutlined";
 import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
+import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
+
+import { useAuth } from "../../../context/AuthContext";
 
 const drawerWidth = 240;
 
 const baseNavigation = [
   { label: "Dashboard", path: "/dashboard", icon: DashboardOutlinedIcon },
   { label: "Courses", path: "/courses/registration", icon: MenuBookOutlinedIcon },
-  { label: "LMS", path: "/lms", icon: LibraryBooksOutlinedIcon },
   { label: "Rooms", path: "/facilities/classrooms", icon: ApartmentOutlinedIcon },
   { label: "Messages", path: "/messages", icon: MessageOutlinedIcon },
 ];
@@ -41,8 +42,9 @@ const adminNavigationItems = [
 ];
 
 const MainLayout = ({ children, profile }) => {
-  const [activeItem, setActiveItem] = useState("Dashboard");
-  const navigate = useNavigate(); // added
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const role = profile?.role || "student";
   const displayName = profile?.name || profile?.full_name || "User";
 
@@ -53,15 +55,30 @@ const MainLayout = ({ children, profile }) => {
     .slice(0, 2)
     .toUpperCase();
 
-  const navigation = useMemo(() => {
+const navigation = useMemo(() => {
+    const coursesItem =
+      role === "admin"
+        ? { ...baseNavigation[1], path: "/admin/course-offerings" }
+        : baseNavigation[1];
+    const roleNavigation = [
+      baseNavigation[0],
+      coursesItem,
+      ...baseNavigation.slice(2, 3),
+    ];
+
     return role === "admin"
-      ? [...baseNavigation.slice(0, 4), ...adminNavigationItems, baseNavigation[4]]
-      : baseNavigation;
+      ? [...roleNavigation, ...adminNavigationItems, baseNavigation[3]]
+      : roleNavigation;
   }, [role]);
 
   const getIsActive = (path) => {
     if (path === "/dashboard") return location.pathname === "/dashboard";
     return location.pathname.startsWith(path);
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login", { replace: true });
   };
 
   return (
@@ -146,21 +163,15 @@ const MainLayout = ({ children, profile }) => {
         <List sx={{ p: 2 }}>
           {navigation.map((item) => (
             <ListItemButton
-              key={item}
-              onClick={() => {
-                setActiveItem(item);
-
-                // navigation logic added
-                if (item === "Dashboard") navigate("/dashboard");
-                if (item === "Messages") navigate("/messages");
-              }}
-              selected={activeItem === item}
+              key={item.path}
+              onClick={() => navigate(item.path)}
+              selected={getIsActive(item.path)}
               sx={{
                 borderRadius: 1,
                 mb: 1,
                 minHeight: 48,
                 px: 1.5,
-                color: activeItem === item ? "primary.main" : "text.secondary",
+                color: getIsActive(item.path) ? "primary.main" : "text.secondary",
                 "&.Mui-selected": {
                   bgcolor: "rgba(30, 58, 138, 0.08)",
                   color: "primary.main",
@@ -177,17 +188,38 @@ const MainLayout = ({ children, profile }) => {
               }}
             >
               <ListItemIcon sx={{ color: "inherit", minWidth: 38 }}>
-                {(() => {
-                  const Icon = navigationIcons[item];
-                  return <Icon fontSize="small" />;
-                })()}
+                <item.icon fontSize="small" />
               </ListItemIcon>
               <ListItemText
-                primary={item}
+                primary={item.label}
                 primaryTypographyProps={{ fontWeight: 800, variant: "body2" }}
               />
             </ListItemButton>
           ))}
+
+          <Divider sx={{ my: 2 }} />
+
+          <ListItemButton
+            onClick={handleLogout}
+            sx={{
+              borderRadius: 1,
+              minHeight: 48,
+              px: 1.5,
+              color: "text.secondary",
+              "&:hover": {
+                bgcolor: "rgba(220, 38, 38, 0.08)",
+                color: "error.main",
+              },
+            }}
+          >
+            <ListItemIcon sx={{ color: "inherit", minWidth: 38 }}>
+              <LogoutOutlinedIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText
+              primary="Logout"
+              primaryTypographyProps={{ fontWeight: 800, variant: "body2" }}
+            />
+          </ListItemButton>
         </List>
       </Drawer>
 

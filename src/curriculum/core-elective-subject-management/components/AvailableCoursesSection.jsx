@@ -3,7 +3,7 @@ import Typography from "@mui/material/Typography";
 
 import CourseOfferingCard from "./CourseOfferingCard";
 
-const AvailableCoursesSection = ({ courses, description, title }) => {
+const AvailableCoursesSection = ({ getActionProps, getActionLabel, courses, description, title }) => {
   if (!courses.length) {
     return null;
   }
@@ -22,7 +22,12 @@ const AvailableCoursesSection = ({ courses, description, title }) => {
 
       <Stack spacing={2}>
         {courses.map((course) => (
-          <CourseOfferingCard course={course} key={course.id} />
+          <CourseOfferingCard
+            actionLabel={getActionLabel?.(course)}
+            actionProps={getActionProps?.(course)}
+            course={course}
+            key={course.id}
+          />
         ))}
       </Stack>
     </Stack>

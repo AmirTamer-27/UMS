@@ -9,6 +9,9 @@ import {
 } from "@mui/material";
 import { supabase } from "../../../services/supabase";
 
+const getProfileName = (profile, fallback = "Unnamed user") =>
+  profile?.full_name || profile?.name || profile?.email || fallback;
+
 const ParentMessagesPage = () => {
   const [user, setUser] = useState(null);
   const [students, setStudents] = useState([]);
@@ -18,6 +21,7 @@ const ParentMessagesPage = () => {
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [notice, setNotice] = useState("");
 
   // get current user
   useEffect(() => {
@@ -33,24 +37,85 @@ const ParentMessagesPage = () => {
   useEffect(() => {
     if (!user) return;
 
+    const loadStudentProfiles = async (studentIds = []) => {
+      let query = supabase
+        .from("profiles")
+        .select("id, full_name, name, email")
+        .eq("role", "student")
+        .order("full_name");
+
+      if (studentIds.length) {
+        query = query.in("id", studentIds);
+      }
+
+      const { data: profiles, error: profilesError } = await query;
+
+      if (profilesError) {
+        setError(profilesError.message);
+        return [];
+      }
+
+      return (profiles || []).map((profile) => ({
+        student_user_id: profile.id,
+        student: profile,
+      }));
+    };
+
     const loadStudents = async () => {
+      setError("");
+      setNotice("");
+
       const { data, error } = await supabase
         .from("parent_student_links")
         .select(`
           student_user_id,
           student:profiles!parent_student_links_student_user_id_fkey (
             id,
-            full_name
+            full_name,
+            name,
+            email
           )
         `)
         .eq("parent_user_id", user.id);
 
       if (error) {
-        console.error(error);
+        const { data: links, error: linkError } = await supabase
+          .from("parent_student_links")
+          .select("student_user_id")
+          .eq("parent_user_id", user.id);
+
+        if (linkError) {
+          setError(linkError.message);
+          return;
+        }
+
+        const studentIds = (links || [])
+          .map((link) => link.student_user_id)
+          .filter(Boolean);
+
+        if (!studentIds.length) {
+          const fallbackStudents = await loadStudentProfiles();
+          setStudents(fallbackStudents);
+          if (fallbackStudents.length) {
+            setNotice("No linked children were found, so all student profiles are shown.");
+          }
+          return;
+        }
+
+        setStudents(await loadStudentProfiles(studentIds));
         return;
       }
 
-      setStudents(data || []);
+      if (data?.length) {
+        setStudents(data);
+        return;
+      }
+
+      const fallbackStudents = await loadStudentProfiles();
+      setStudents(fallbackStudents);
+      if (fallbackStudents.length) {
+        setNotice("No linked children were found, so all student profiles are shown.");
+      }
     };
 
     loadStudents();
@@ -61,29 +126,67 @@ const ParentMessagesPage = () => {
     if (!selectedStudent) return;
 
     const loadTeacher = async () => {
-      const { data: registrations } = await supabase
+      setTeacher(null);
+      setError("");
+      setNotice("");
+
+      const { data: registrations, error: registrationsError } = await supabase
         .from("registrations")
         .select("course_offering_id")
-        .eq("student_user_id", selectedStudent);
+        .eq("student_user_id", selectedStudent)
+        .eq("status", "registered");
+
+      if (registrationsError) {
+        setError(registrationsError.message);
+        return;
+      }
 
       if (!registrations || registrations.length === 0) {
-        setTeacher(null);
+        const { data: fallbackTeacher, error: fallbackError } = await supabase
+          .from("profiles")
+          .select("id, full_name, name, email")
+          .eq("role", "teacher")
+          .limit(1);
+
+        if (fallbackError) {
+          setError(fallbackError.message);
+          return;
+        }
+
+        setTeacher(
+          fallbackTeacher?.[0]
+            ? {
+                instructor_user_id: fallbackTeacher[0].id,
+                instructor: fallbackTeacher[0],
+              }
+            : null,
+        );
+        if (fallbackTeacher?.[0]) {
+          setNotice("No registered teacher was found for this student, so the first teacher profile is shown.");
+        }
         return;
       }
 
       const offeringIds = registrations.map((r) => r.course_offering_id);
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("course_offerings")
         .select(`
           instructor_user_id,
           instructor:profiles!course_offerings_instructor_user_id_fkey (
             id,
-            full_name
+            full_name,
+            name,
+            email
           )
         `)
         .in("id", offeringIds)
         .limit(1);
+
+      if (error) {
+        setError(error.message);
+        return;
+      }
 
       setTeacher(data?.[0] || null);
     };
@@ -163,6 +266,12 @@ const ParentMessagesPage = () => {
         </Alert>
       )}
 
+      {notice && (
+        <Alert severity="info" sx={{ mt: 2 }}>
+          {notice}
+        </Alert>
+      )}
+
       {/* Student */}
       <TextField
         select
@@ -175,9 +284,14 @@ const ParentMessagesPage = () => {
         }}
         margin="normal"
       >
+        {!students.length ? (
+          <MenuItem disabled value="">
+            No linked children found
+          </MenuItem>
+        ) : null}
         {students.map((s) => (
           <MenuItem key={s.student_user_id} value={s.student_user_id}>
-            {s.student?.full_name}
+            {getProfileName(s.student, s.student_user_id)}
           </MenuItem>
         ))}
       </TextField>
@@ -186,7 +300,7 @@ const ParentMessagesPage = () => {
       <TextField
         fullWidth
         label="Teacher"
-        value={teacher?.instructor?.full_name || "No teacher found"}
+        value={teacher?.instructor ? getProfileName(teacher.instructor) : "No teacher found"}
         margin="normal"
         disabled
       />
