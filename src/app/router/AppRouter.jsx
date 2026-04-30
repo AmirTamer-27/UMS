@@ -10,6 +10,7 @@ import { StudentCourseRegistrationPage } from "../../curriculum/core-elective-su
 import LoginPage from "../../modules/auth/login/pages/LoginPage";
 import Dashboard from "../Dashboard";
 import AdminCourseOfferingPage from "../../modules/curriculum/course-registration/admin/AdminCourseOfferingPage";
+import { ParentMessagesPage, TeacherMessagesPage, MessagesPage } from "../../community/parent-to-teacher-communication/pages";
 
 const AppRouter = () => (
   <Router>
@@ -32,6 +33,18 @@ const AppRouter = () => (
         path="/dashboard"
       />
       <Route element={<AdminCourseOfferingPage />} path="/admin/course-offerings" />
+      <Route
+        element={<ProtectedRoute><ParentMessagesPage /></ProtectedRoute>}
+        path="/parent/messages"
+      />
+      <Route
+        element={<ProtectedRoute><TeacherMessagesPage /></ProtectedRoute>}
+        path="/teacher/messages"
+      />
+      <Route
+        element={<ProtectedRoute><MessagesPage /></ProtectedRoute>}
+        path="/messages"
+      />
       <Route element={<Navigate replace to="/login" />} path="/" />
       <Route element={<Navigate replace to="/" />} path="*" />
     </Routes>

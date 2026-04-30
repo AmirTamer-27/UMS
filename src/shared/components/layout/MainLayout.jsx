@@ -21,6 +21,7 @@ import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import LibraryBooksOutlinedIcon from "@mui/icons-material/LibraryBooksOutlined";
 import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import MessageOutlinedIcon from "@mui/icons-material/MessageOutlined";
+import { useNavigate } from "react-router-dom";
 
 const drawerWidth = 240;
 
@@ -35,8 +36,19 @@ const navigationIcons = {
   Messages: MessageOutlinedIcon,
 };
 
+const navigationRoutes = {
+  Dashboard: "/dashboard",
+  Courses: "/courses/registration",
+  Messages: (role) => {
+    if (role === "parent") return "/parent/messages";
+    if (role === "instructor" || role === "teacher" || role === "staff") return "/teacher/messages";
+    return "/messages";
+  },
+};
+
 const MainLayout = ({ children, profile }) => {
   const [activeItem, setActiveItem] = useState("Dashboard");
+  const navigate = useNavigate();
   const role = profile?.role || "student";
   const displayName = profile?.name || profile?.full_name || "User";
   const initials = displayName
@@ -122,7 +134,11 @@ const MainLayout = ({ children, profile }) => {
           {navigation.map((item) => (
             <ListItemButton
               key={item}
-              onClick={() => setActiveItem(item)}
+              onClick={() => {
+                setActiveItem(item);
+                const route = navigationRoutes[item];
+                if (route) navigate(typeof route === "function" ? route(role) : route);
+              }}
               selected={activeItem === item}
               sx={{
                 borderRadius: 1,

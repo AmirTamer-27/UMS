@@ -1,10 +1,12 @@
 import { Grid, Stack } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
 import QuickActions from "./QuickActions";
 import RecentActivityCard from "./RecentActivityCard";
 import SummaryCard from "./SummaryCard";
 
 const InstructorDashboard = ({ data, loading }) => {
+  const navigate = useNavigate();
   const cards = [
     {
       label: "My Course Offerings",
@@ -52,6 +54,7 @@ const InstructorDashboard = ({ data, loading }) => {
           { label: "Upload Material" },
           { label: "Create Assignment", color: "warning" },
           { label: "View Submissions", color: "secondary", variant: "outlined" },
+          { label: "Send Message", color: "secondary", variant: "outlined", onClick: () => navigate("/teacher/messages") },
         ]}
       />
       <RecentActivityCard>
