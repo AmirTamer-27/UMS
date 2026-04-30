@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
-import { Box, Button, MenuItem, TextField, Typography } from "@mui/material";
+import { Alert, Box, Button, MenuItem, TextField, Typography } from "@mui/material";
 import { supabase } from "../../../services/supabase";
-
-const getProfileName = (profile, fallback = "Unnamed user") =>
-  profile?.full_name || profile?.name || profile?.email || fallback;
+import { useAuth } from "../../../context/AuthContext";
 
 const TeacherMessagesPage = () => {
+  const { user: currentUser } = useAuth();
   const [students, setStudents] = useState([]);
   const [parents, setParents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState("");
@@ -204,50 +203,41 @@ const TeacherMessagesPage = () => {
     setSuccess("");
 
     try {
-      // find existing conversation
       const { data: existing } = await supabase
         .from("conversations")
-        .select("*")
+        .select("id")
         .eq("student_user_id", selectedStudent)
         .eq("teacher_user_id", currentUser.id)
         .eq("parent_user_id", selectedParent)
         .maybeSingle();
 
-      let conversationId;
+      let conversationId = existing?.id;
 
-      if (existing) {
-        conversationId = existing.id;
-      } else {
-        const { data: newConv, error } = await supabase
+      if (!conversationId) {
+        const { data: newConv, error: convErr } = await supabase
           .from("conversations")
           .insert({
             student_user_id: selectedStudent,
             teacher_user_id: currentUser.id,
             parent_user_id: selectedParent,
           })
-          .select()
+          .select("id")
           .single();
 
-        if (error) throw error;
-
+        if (convErr) throw convErr;
         conversationId = newConv.id;
       }
 
-      // insert message
-      const { error: msgError } = await supabase
-        .from("messages")
-        .insert({
-          conversation_id: conversationId,
-          sender_user_id: currentUser.id,
-          message_body: message,
-        });
+      const { error: msgErr } = await supabase.from("messages").insert({
+        conversation_id: conversationId,
+        sender_user_id: currentUser.id,
+        message_body: message,
+      });
 
-      if (msgError) throw msgError;
+      if (msgErr) throw msgErr;
 
-      // success
       setMessage("");
       setSuccess("Message sent successfully");
-
     } catch (err) {
       setErrorMsg(err.message || "Failed to send message");
     } finally {
@@ -261,27 +251,9 @@ const TeacherMessagesPage = () => {
         Send Update to Parents
       </Typography>
 
-      {/* Success */}
-      {success && (
-        <Typography color="green" sx={{ mb: 2 }}>
-          {success}
-        </Typography>
-      )}
+      {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+      {errorMsg && <Alert severity="error" sx={{ mb: 2 }}>{errorMsg}</Alert>}
 
-      {/* Error */}
-      {errorMsg && (
-        <Typography color="error" sx={{ mb: 2 }}>
-          {errorMsg}
-        </Typography>
-      )}
-
-      {notice && (
-        <Typography color="text.secondary" sx={{ mb: 2 }}>
-          {notice}
-        </Typography>
-      )}
-
-      {/* Student Select */}
       <TextField
         select
         fullWidth
@@ -337,12 +309,7 @@ const TeacherMessagesPage = () => {
         margin="normal"
       />
 
-      {/* Send Button */}
-      <Button
-        variant="contained"
-        onClick={handleSend}
-        disabled={sending}
-      >
+      <Button variant="contained" onClick={handleSend} disabled={sending}>
         {sending ? "Sending..." : "Send Message"}
       </Button>
     </Box>

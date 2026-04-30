@@ -22,6 +22,7 @@ import ApartmentOutlinedIcon from "@mui/icons-material/ApartmentOutlined";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import MessageOutlinedIcon from "@mui/icons-material/MessageOutlined";
+import { useNavigate } from "react-router-dom";
 import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 
@@ -41,7 +42,19 @@ const adminNavigationItems = [
   { label: "Admin", path: "/admin/course-offerings", icon: AdminPanelSettingsOutlinedIcon },
 ];
 
+const navigationRoutes = {
+  Dashboard: "/dashboard",
+  Courses: "/courses/registration",
+  Messages: (role) => {
+    if (role === "parent") return "/parent/messages";
+    if (role === "instructor" || role === "teacher" || role === "staff") return "/teacher/messages";
+    return "/messages";
+  },
+};
+
 const MainLayout = ({ children, profile }) => {
+  const [activeItem, setActiveItem] = useState("Dashboard");
+  const navigate = useNavigate();
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
@@ -163,6 +176,13 @@ const navigation = useMemo(() => {
         <List sx={{ p: 2 }}>
           {navigation.map((item) => (
             <ListItemButton
+              key={item}
+              onClick={() => {
+                setActiveItem(item);
+                const route = navigationRoutes[item];
+                if (route) navigate(typeof route === "function" ? route(role) : route);
+              }}
+              selected={activeItem === item}
               key={item.path}
               onClick={() => navigate(item.path)}
               selected={getIsActive(item.path)}

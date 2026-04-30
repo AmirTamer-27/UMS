@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Box, Typography, Paper, Divider } from "@mui/material";
+import { Box, Divider, Paper, Typography } from "@mui/material";
 import { supabase } from "../../../services/supabase";
+import { useAuth } from "../../../context/AuthContext";
 
 const MessagesPage = () => {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [messages, setMessages] = useState([]);
   const [profilesMap, setProfilesMap] = useState({});
   const [conversationsMap, setConversationsMap] = useState({});
@@ -19,28 +20,21 @@ const MessagesPage = () => {
       const { data: conversations } = await supabase
         .from("conversations")
         .select("*")
-        .or(
-          `teacher_user_id.eq.${currentUser.id},parent_user_id.eq.${currentUser.id}`
-        );
+        .or(`teacher_user_id.eq.${user.id},parent_user_id.eq.${user.id}`);
 
       if (!conversations || conversations.length === 0) return;
 
-      const convIds = conversations.map((c) => c.id);
-
       const convMap = {};
-      conversations.forEach((c) => {
-        convMap[c.id] = c;
-      });
+      conversations.forEach((c) => { convMap[c.id] = c; });
       setConversationsMap(convMap);
 
       const { data: msgs } = await supabase
         .from("messages")
         .select("*")
-        .in("conversation_id", convIds)
+        .in("conversation_id", conversations.map((c) => c.id))
         .order("created_at", { ascending: false });
 
       if (!msgs) return;
-
       setMessages(msgs);
 
       const ids = new Set();
@@ -56,15 +50,13 @@ const MessagesPage = () => {
         .in("id", Array.from(ids));
 
       const map = {};
-      profiles?.forEach((p) => {
-        map[p.id] = p;
-      });
-
+      (profiles || []).forEach((p) => { map[p.id] = p; });
       setProfilesMap(map);
     };
 
     loadData();
-  }, []);
+  }, [user]);
+ 
 
   return (
     <Box p={3}>
@@ -72,13 +64,7 @@ const MessagesPage = () => {
         Inbox
       </Typography>
 
-      <Paper
-        sx={{
-          borderRadius: 3,
-          maxHeight: "70vh",
-          overflowY: "auto",
-        }}
-      >
+      <Paper sx={{ borderRadius: 3, maxHeight: "70vh", overflowY: "auto" }}>
         {messages.length === 0 ? (
           <Typography p={2}>No messages yet</Typography>
         ) : (
@@ -107,28 +93,13 @@ const MessagesPage = () => {
                   sx={{
                     px: 2,
                     py: 1.5,
-                    transition: "0.2s",
-                    "&:hover": {
-                      bgcolor: "rgba(0,0,0,0.03)",
-                    },
+                    "&:hover": { bgcolor: "rgba(0,0,0,0.03)" },
                   }}
                 >
-                  {/* Top Row */}
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Typography
-                      variant="subtitle2"
-                      fontWeight={700}
-                      color="text.primary"
-                    >
+                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <Typography variant="subtitle2" fontWeight={700} color="text.primary">
                       {label}
                     </Typography>
-
                     <Typography variant="caption" color="text.secondary">
                       {new Date(msg.created_at).toLocaleString()}
                     </Typography>

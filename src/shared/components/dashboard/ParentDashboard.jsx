@@ -1,9 +1,12 @@
 import { Grid, Stack } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
 import QuickActions from "./QuickActions";
 import RecentActivityCard from "./RecentActivityCard";
 import SummaryCard from "./SummaryCard";
 
+const ParentDashboard = ({ data, loading }) => {
+  const navigate = useNavigate();
 const ParentDashboard = ({ data, loading, profile }) => {
   const cards = [
     {
@@ -35,6 +38,7 @@ const ParentDashboard = ({ data, loading, profile }) => {
           </Grid>
         ))}
       </Grid>
+      <QuickActions actions={[{ label: "Send Message", onClick: () => navigate("/parent/messages") }]} />
 
       <QuickActions
         profile={profile}

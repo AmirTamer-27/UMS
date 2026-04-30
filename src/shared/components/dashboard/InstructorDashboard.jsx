@@ -62,6 +62,7 @@ const InstructorDashboard = ({ data, loading }) => {
           { label: "Upload Material" },
           { label: "Create Assignment", color: "warning" },
           { label: "View Submissions", color: "secondary", variant: "outlined" },
+          { label: "Send Message", color: "secondary", variant: "outlined", onClick: () => navigate("/teacher/messages") },
         ]}
       />
 
