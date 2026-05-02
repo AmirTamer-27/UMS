@@ -20,10 +20,10 @@ import {
 import AdminPanelSettingsOutlinedIcon from "@mui/icons-material/AdminPanelSettingsOutlined";
 import ApartmentOutlinedIcon from "@mui/icons-material/ApartmentOutlined";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
+import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import MessageOutlinedIcon from "@mui/icons-material/MessageOutlined";
 import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
-import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 
 import { useAuth } from "../../../context/AuthContext";
 
@@ -55,7 +55,7 @@ const MainLayout = ({ children, profile }) => {
     .slice(0, 2)
     .toUpperCase();
 
-const navigation = useMemo(() => {
+  const navigation = useMemo(() => {
     const coursesItem =
       role === "admin"
         ? { ...baseNavigation[1], path: "/admin/course-offerings" }

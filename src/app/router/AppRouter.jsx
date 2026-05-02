@@ -19,6 +19,8 @@ import MessagesPage from "../../community/parent-to-teacher-communication/pages/
 import ParentMessagesPage from "../../community/parent-to-teacher-communication/pages/ParentMessagesPage";
 import ClassroomsPage from "../../facilities/classroom-laboratory-management/pages/ClassroomsPage";
 import StudentRecordsPage from "../../facilities/administrative-office-automation/pages/StudentRecordsPage";
+import AssignmentDetailPage from "../../modules/lms/pages/AssignmentDetailPage";
+import CourseOfferingPage from "../../modules/lms/pages/CourseOfferingPage";
 
 const AppRouter = () => (
   <Router future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
@@ -113,6 +115,24 @@ const AppRouter = () => (
             <ParentMessagesPage />
           </ProtectedRoute>
         }
+      />
+
+      <Route
+        element={
+          <ProtectedRoute>
+            <CourseOfferingPage />
+          </ProtectedRoute>
+        }
+        path="/lms/courses/:courseOfferingId"
+      />
+
+      <Route
+        element={
+          <ProtectedRoute>
+            <AssignmentDetailPage />
+          </ProtectedRoute>
+        }
+        path="/lms/courses/:courseOfferingId/assignments/:assignmentId"
       />
 
       <Route element={<Navigate replace to="/login" />} path="/" />

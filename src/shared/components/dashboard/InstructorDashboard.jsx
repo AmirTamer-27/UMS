@@ -1,4 +1,16 @@
-import { Grid, Stack } from "@mui/material";
+import {
+  Card,
+  CardContent,
+  Grid,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Stack,
+  Typography,
+} from "@mui/material";
+import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import { useNavigate } from "react-router-dom";
 
 import QuickActions from "./QuickActions";
@@ -59,11 +71,45 @@ const InstructorDashboard = ({ data, loading }) => {
 
       <QuickActions
         actions={[
-          { label: "Upload Material" },
-          { label: "Create Assignment", color: "warning" },
+          {
+            label: "Upload Material",
+            onClick: () => data.courseOfferings?.[0]?.id && navigate(`/lms/courses/${data.courseOfferings[0].id}`),
+          },
+          {
+            label: "Create Assignment",
+            color: "warning",
+            onClick: () => data.courseOfferings?.[0]?.id && navigate(`/lms/courses/${data.courseOfferings[0].id}`),
+          },
           { label: "View Submissions", color: "secondary", variant: "outlined" },
         ]}
       />
+
+      <Card sx={{ bgcolor: "background.paper" }}>
+        <CardContent>
+          <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+            My Courses (LMS)
+          </Typography>
+          {!loading && data.courseOfferings?.length === 0 ? (
+            <Typography color="text.secondary">No course offerings assigned.</Typography>
+          ) : (
+            <List>
+              {data.courseOfferings?.map((offering) => (
+                <ListItem key={offering.id} disablePadding divider>
+                  <ListItemButton onClick={() => navigate(`/lms/courses/${offering.id}`)}>
+                    <ListItemIcon>
+                      <MenuBookOutlinedIcon color="primary" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={`Course Offering (ID: ${offering.id.substring(0, 8)})`}
+                      secondary="Upload materials, create assignments, and review submissions"
+                    />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </CardContent>
+      </Card>
 
       <RecentActivityCard>
         New submissions, parent messages, and material uploads will appear here.

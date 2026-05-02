@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Grid, TextField, Button, MenuItem, Stack } from '@mui/material';
-import SeatLimitField from './SeatLimitField';
-import PrerequisiteSelector from './PrerequisiteSelector';
+import { Alert, Autocomplete, Button, Grid, MenuItem, Stack, TextField } from '@mui/material';
+
 import supabase, { isSupabaseConfigured } from '../../../../services/supabase/client';
+import PrerequisiteSelector from './PrerequisiteSelector';
+import SeatLimitField from './SeatLimitField';
 import offeringQueue from './offeringQueue';
-import { Autocomplete, TextField as MuiTextField } from '@mui/material';
 
 export default function OfferingForm({ onOfferingCreated }) {
   const [courses, setCourses] = useState([]);
@@ -23,56 +23,68 @@ export default function OfferingForm({ onOfferingCreated }) {
 
   useEffect(() => {
     let mounted = true;
-    async function load() {
-        try {
-          if (isSupabaseConfigured && supabase) {
-            const { data, error } = await supabase.from('courses').select('*');
-            if (error) {
-              console.error(error);
-              // helpful hint for the developer
-              console.error(
-                "Schema error while selecting from 'courses'. Run this SQL in Supabase SQL editor:\nselect column_name, data_type from information_schema.columns where table_name='courses';",
-              );
-              return;
-            }
-            if (mounted) setCourses(data || []);
-          } else {
-            console.error('Supabase is not configured — OfferingForm requires Supabase');
-          }
+
+    async function loadCourses() {
+      try {
+        if (!isSupabaseConfigured || !supabase) {
+          console.error('Supabase is not configured — OfferingForm requires Supabase');
+          return;
+        }
+
+        const { data, error } = await supabase.from('courses').select('*');
+        if (error) {
+          console.error(error);
+          return;
+        }
+
+        if (mounted) setCourses(data || []);
       } catch (err) {
         console.error(err);
       }
     }
-    load();
-    return () => (mounted = false);
+
+    loadCourses();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   useEffect(() => {
     let mounted = true;
+
     async function loadSemesters() {
       try {
-        if (isSupabaseConfigured && supabase) {
-          const { data, error } = await supabase.from('semesters').select('*').order('start_date', { ascending: false });
-          if (error) {
-            console.error('Failed to load semesters', error);
-            return;
-          }
-          if (mounted) {
-            const nextSemesters = data || [];
-            setSemesters(nextSemesters);
-            const activeSemester = nextSemesters.find((semester) => semester.is_active);
-            setForm((currentForm) => ({
-              ...currentForm,
-              semester_id: currentForm.semester_id || activeSemester?.id || nextSemesters[0]?.id || '',
-            }));
-          }
+        if (!isSupabaseConfigured || !supabase) return;
+
+        const { data, error } = await supabase
+          .from('semesters')
+          .select('*')
+          .order('start_date', { ascending: false });
+
+        if (error) {
+          console.error('Failed to load semesters', error);
+          return;
+        }
+
+        if (mounted) {
+          const nextSemesters = data || [];
+          const activeSemester = nextSemesters.find((semester) => semester.is_active);
+
+          setSemesters(nextSemesters);
+          setForm((currentForm) => ({
+            ...currentForm,
+            semester_id: currentForm.semester_id || activeSemester?.id || nextSemesters[0]?.id || '',
+          }));
         }
       } catch (err) {
         console.error(err);
       }
     }
+
     loadSemesters();
-    return () => (mounted = false);
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -119,12 +131,14 @@ export default function OfferingForm({ onOfferingCreated }) {
     }
 
     loadStaffMembers();
-    return () => (mounted = false);
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  function handleChange(e) {
-    const { name, value } = e.target;
-    setForm((s) => ({ ...s, [name]: value }));
+  function handleChange(event) {
+    const { name, value } = event.target;
+    setForm((currentForm) => ({ ...currentForm, [name]: value }));
   }
 
   function resetForm() {
@@ -138,8 +152,65 @@ export default function OfferingForm({ onOfferingCreated }) {
     setCourseInput('');
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
+  async function resolveCourseId() {
+    if (form.course_id) return form.course_id;
+
+    const name = courseInput.trim();
+    if (!name) {
+      throw new Error('Select a course before creating an offering.');
+    }
+
+    const { data: existing, error: existingError } = await supabase
+      .from('courses')
+      .select('id')
+      .eq('name', name)
+      .maybeSingle();
+
+    if (existingError) throw existingError;
+    if (existing?.id) return existing.id;
+
+    const base = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 12);
+    const code = `${base}-${Math.floor(100 + Math.random() * 899)}`;
+
+    const { data: courseData, error: courseError } = await supabase
+      .from('courses')
+      .insert({ name, code, credit_hours: 3, course_type: 'core' })
+      .select('id')
+      .single();
+
+    if (courseError) {
+      if (
+        courseError?.code === '42501' ||
+        courseError?.status === 401 ||
+        courseError?.message?.toLowerCase?.().includes('row-level security')
+      ) {
+        const queued = offeringQueue.enqueueOffering({
+          course: { name, code, credit_hours: 3, course_type: 'core' },
+          payload: {
+            course_id: null,
+            semester_id: form.semester_id,
+            instructor_user_id: form.instructor_user_id,
+            seat_limit: Number(form.seats),
+            published: false,
+          },
+          prerequisites: form.prerequisites,
+        });
+        console.warn('Course creation blocked by RLS/auth — offering queued locally (#' + queued + ')');
+        resetForm();
+      }
+
+      throw courseError;
+    }
+
+    return courseData?.id;
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
     setMessage('');
     setErrorMessage('');
 
@@ -165,69 +236,7 @@ export default function OfferingForm({ onOfferingCreated }) {
         return;
       }
 
-      // determine course id: if form.course_id already set use it, else try to create a course from courseInput
-      let courseId = form.course_id;
-      if (!courseId) {
-        const name = (courseInput || '').trim();
-        if (!name) {
-          setErrorMessage('Select a course before creating an offering.');
-          return;
-        }
-        // Check for existing course by name to avoid duplicates
-        const { data: existing, error: existingErr } = await supabase
-          .from('courses')
-          .select('id')
-          .eq('name', name)
-          .maybeSingle();
-        if (existingErr) {
-          setErrorMessage(existingErr.message);
-          return;
-        }
-        if (existing && existing.id) {
-          courseId = existing.id;
-        } else {
-          // Generate a course code since DB requires non-null `code`.
-          function generateCode(s) {
-            const base = s
-              .toLowerCase()
-              .replace(/[^a-z0-9]+/g, '-')
-              .replace(/^-+|-+$/g, '')
-              .slice(0, 12);
-            const suffix = Math.floor(100 + Math.random() * 899);
-            return `${base}-${suffix}`;
-          }
-          const code = generateCode(name);
-          const { data: courseData, error: courseErr } = await supabase
-            .from('courses')
-            .insert({ name, code, credit_hours: 3, course_type: 'core' })
-            .select();
-          if (courseErr) {
-            console.error(courseErr);
-            // If row-level security or auth blocks the insert, enqueue the entire offering for later retry
-            if (courseErr?.code === '42501' || courseErr?.status === 401 || courseErr?.message?.toLowerCase?.().includes('row-level security')) {
-              const queued = offeringQueue.enqueueOffering({
-                course: { name, code, credit_hours: 3, course_type: 'core' },
-                payload: {
-                  course_id: null,
-                  semester_id: form.semester_id,
-                  instructor_user_id: form.instructor_user_id,
-                  seat_limit: Number(form.seats),
-                  published: false,
-                },
-                prerequisites: form.prerequisites,
-              });
-              console.warn('Course creation blocked by RLS/auth — offering queued locally (#' + queued + ')');
-              // Reset form for user to continue using UI; queued items will be retried when policies/keys are fixed
-              resetForm();
-              return;
-            }
-            setErrorMessage(courseErr.message);
-            return;
-          }
-          courseId = courseData?.[0]?.id;
-        }
-      }
-      // Validate required UUID fields before sending to Supabase
+      const courseId = await resolveCourseId();
       if (!courseId) {
         setErrorMessage('Cannot create offering: no course selected or created.');
         return;
@@ -258,25 +267,33 @@ export default function OfferingForm({ onOfferingCreated }) {
         published: false,
       };
 
-      const { data, error } = await supabase.from('course_offerings').insert(payload).select();
+      const { error } = await supabase.from('course_offerings').insert(payload).select();
       if (error) {
         if (error?.code === '42501' || error?.status === 401) {
-          // Queue full offering for later retry
           const queued = offeringQueue.enqueueOffering({
-            courseId, payload, prerequisites: form.prerequisites,
+            courseId,
+            payload,
+            prerequisites: form.prerequisites,
           });
           console.warn('Offering creation blocked by RLS/auth — queued locally (#' + queued + ')');
           resetForm();
           return;
         }
+
         setErrorMessage(error.message);
         return;
       }
 
       if (form.prerequisites?.length) {
-        const inserts = form.prerequisites.map((pid) => ({ course_id: courseId, prerequisite_course_id: pid }));
-        const { error: preErr } = await supabase.from('course_prerequisites').insert(inserts);
-        if (preErr) console.error(preErr);
+        const inserts = form.prerequisites.map((prerequisiteCourseId) => ({
+          course_id: courseId,
+          prerequisite_course_id: prerequisiteCourseId,
+        }));
+        const { error: prerequisiteError } = await supabase
+          .from('course_prerequisites')
+          .insert(inserts);
+
+        if (prerequisiteError) console.error(prerequisiteError);
       }
 
       resetForm();
@@ -298,95 +315,109 @@ export default function OfferingForm({ onOfferingCreated }) {
       <Stack spacing={2}>
         {message ? <Alert severity="success">{message}</Alert> : null}
         {errorMessage ? <Alert severity="error">{errorMessage}</Alert> : null}
-      <Grid container spacing={2}>
-        <Grid item xs={12} md={6}>
-          <Autocomplete
-            freeSolo
-            options={courses}
-            getOptionLabel={(o) => {
-              if (typeof o === 'string') return o;
-              return o?.name || o?.title || String(o?.id || '');
-            }}
-            value={courses.find((c) => c.id === form.course_id) || null}
-            inputValue={courseInput}
-            onInputChange={(_, v) => setCourseInput(v)}
-            onChange={(_, v) => {
-              if (!v) {
-                setForm((s) => ({ ...s, course_id: '' }));
-                return;
+
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={6}>
+            <Autocomplete
+              freeSolo
+              options={courses}
+              getOptionLabel={(option) => {
+                if (typeof option === 'string') return option;
+                return option?.name || option?.title || String(option?.id || '');
+              }}
+              value={courses.find((course) => course.id === form.course_id) || null}
+              inputValue={courseInput}
+              onInputChange={(_, value) => setCourseInput(value)}
+              onChange={(_, value) => {
+                if (!value) {
+                  setForm((currentForm) => ({ ...currentForm, course_id: '' }));
+                  return;
+                }
+                if (typeof value === 'string') {
+                  setCourseInput(value);
+                  setForm((currentForm) => ({ ...currentForm, course_id: '' }));
+                } else {
+                  setCourseInput(value.name);
+                  setForm((currentForm) => ({ ...currentForm, course_id: value.id }));
+                }
+              }}
+              renderInput={(params) => (
+                <TextField {...params} label="Course (select or type to add)" />
+              )}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              select
+              fullWidth
+              label="Semester"
+              name="semester_id"
+              value={form.semester_id}
+              onChange={handleChange}
+              helperText={
+                semesters.length === 0
+                  ? 'No semesters found.'
+                  : 'Active semester is selected automatically. Choose another if needed.'
               }
-              if (typeof v === 'string') {
-                // free text: set input; course_id stays blank to create on submit
-                setCourseInput(v);
-                setForm((s) => ({ ...s, course_id: '' }));
-              } else {
-                setCourseInput(v.name);
-                setForm((s) => ({ ...s, course_id: v.id }));
+            >
+              {semesters.map((semester) => (
+                <MenuItem key={semester.id} value={semester.id}>
+                  {semester.name}{semester.is_active ? ' (Active)' : ''}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <SeatLimitField
+              value={form.seats}
+              onChange={(value) => setForm((currentForm) => ({ ...currentForm, seats: value }))}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              select
+              fullWidth
+              label="Instructor"
+              name="instructor_user_id"
+              value={form.instructor_user_id}
+              onChange={handleChange}
+              helperText={
+                staffMembers.length === 0
+                  ? 'No teacher or staff profiles found.'
+                  : 'Select the staff member who will teach this offering.'
               }
-            }}
-            renderInput={(params) => <MuiTextField {...params} label="Course (select or type to add)" />}
-          />
-        </Grid>
+            >
+              {staffMembers.map((staff) => (
+                <MenuItem key={staff.id} value={staff.id}>
+                  {staff.name}{staff.title ? ` - ${staff.title}` : ''}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
 
-        <Grid item xs={12} md={6}>
-          <TextField
-            select
-            fullWidth
-            label="Semester"
-            name="semester_id"
-            value={form.semester_id}
-            onChange={handleChange}
-            helperText={
-              semesters.length === 0
-                ? 'No semesters found.'
-                : 'Active semester is selected automatically. Choose another if needed.'
-            }
-          >
-            {semesters.map((semester) => (
-              <MenuItem key={semester.id} value={semester.id}>
-                {semester.name}{semester.is_active ? ' (Active)' : ''}
-              </MenuItem>
-            ))}
-          </TextField>
-        </Grid>
+          <Grid item xs={12}>
+            <PrerequisiteSelector
+              value={form.prerequisites}
+              onChange={(value) => (
+                setForm((currentForm) => ({ ...currentForm, prerequisites: value }))
+              )}
+            />
+          </Grid>
 
-        <Grid item xs={12} md={6}>
-          <SeatLimitField value={form.seats} onChange={(v) => setForm((s) => ({ ...s, seats: v }))} />
+          <Grid item xs={12}>
+            <Stack direction="row" spacing={2} justifyContent="flex-end">
+              <Button onClick={handleCancel} variant="outlined">
+                Cancel
+              </Button>
+              <Button type="submit" variant="contained" color="primary">
+                Create Offering
+              </Button>
+            </Stack>
+          </Grid>
         </Grid>
-
-        <Grid item xs={12} md={6}>
-          <TextField
-            select
-            fullWidth
-            label="Instructor"
-            name="instructor_user_id"
-            value={form.instructor_user_id}
-            onChange={handleChange}
-            helperText={
-              staffMembers.length === 0
-                ? 'No teacher or staff profiles found.'
-                : 'Select the staff member who will teach this offering.'
-            }
-          >
-            {staffMembers.map((staff) => (
-              <MenuItem key={staff.id} value={staff.id}>
-                {staff.name}{staff.title ? ` — ${staff.title}` : ''}
-              </MenuItem>
-            ))}
-          </TextField>
-        </Grid>
-
-        <Grid item xs={12}>
-          <PrerequisiteSelector value={form.prerequisites} onChange={(v) => setForm((s) => ({ ...s, prerequisites: v }))} />
-        </Grid>
-
-        <Grid item xs={12}>
-          <Stack direction="row" spacing={2} justifyContent="flex-end">
-            <Button onClick={handleCancel} variant="outlined">Cancel</Button>
-            <Button type="submit" variant="contained" color="primary">Create Offering</Button>
-          </Stack>
-        </Grid>
-      </Grid>
       </Stack>
     </form>
   );

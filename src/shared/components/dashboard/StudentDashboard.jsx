@@ -1,10 +1,14 @@
-import { Grid, Stack } from "@mui/material";
+import { Grid, Stack, Typography, List, ListItem, ListItemButton, ListItemText, ListItemIcon, Card, CardContent } from "@mui/material";
+import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
+import { useNavigate } from "react-router-dom";
 
 import QuickActions from "./QuickActions";
 import RecentActivityCard from "./RecentActivityCard";
 import SummaryCard from "./SummaryCard";
 
 const StudentDashboard = ({ data, loading }) => {
+  const navigate = useNavigate();
+
   const cards = [
     {
       label: "My Courses",
@@ -47,9 +51,37 @@ const StudentDashboard = ({ data, loading }) => {
           </Grid>
         ))}
       </Grid>
+
+      <Card sx={{ bgcolor: "background.paper" }}>
+        <CardContent>
+          <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+            My Courses (LMS)
+          </Typography>
+          {!loading && data.registeredOfferings?.length === 0 ? (
+            <Typography color="text.secondary">No courses registered.</Typography>
+          ) : (
+            <List>
+              {data.registeredOfferings?.map((offering) => (
+                <ListItem key={offering.id} disablePadding divider>
+                  <ListItemButton onClick={() => navigate(`/lms/courses/${offering.id}`)}>
+                    <ListItemIcon>
+                      <MenuBookOutlinedIcon color="primary" />
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary={`Course Offering (ID: ${offering.id.substring(0, 8)})`} 
+                      secondary="Click to view materials and assignments" 
+                    />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </CardContent>
+      </Card>
+
       <QuickActions
         actions={[
-          { label: "Browse Courses" },
+          { label: "Browse Courses", onClick: () => navigate("/courses/registration") },
           { label: "My Registrations", color: "secondary", variant: "outlined" },
           { label: "Submit Assignment", color: "warning" },
         ]}
