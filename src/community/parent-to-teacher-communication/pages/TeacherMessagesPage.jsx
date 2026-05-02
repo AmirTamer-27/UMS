@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { Box, Button, MenuItem, TextField, Typography } from "@mui/material";
 import { supabase } from "../../../services/supabase";
+import { useAuth } from "../../../context/AuthContext";
 
 const getProfileName = (profile, fallback = "Unnamed user") =>
   profile?.full_name || profile?.email || fallback;
 
 const TeacherMessagesPage = () => {
+  const { user: currentUser } = useAuth();
   const [students, setStudents] = useState([]);
   const [parents, setParents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState("");
@@ -14,24 +16,11 @@ const TeacherMessagesPage = () => {
   const [threadMessages, setThreadMessages] = useState([]);
   const [threadRefreshKey, setThreadRefreshKey] = useState(0);
 
-  // auth user
-  const [currentUser, setCurrentUser] = useState(null);
-
   // UX states
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [notice, setNotice] = useState("");
-
-  // Load logged-in user
-  useEffect(() => {
-    const loadUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      setCurrentUser(data?.user || null);
-    };
-
-    loadUser();
-  }, []);
 
   // Load students enrolled in this teacher's course offerings.
   useEffect(() => {

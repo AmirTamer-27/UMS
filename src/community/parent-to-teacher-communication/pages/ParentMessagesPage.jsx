@@ -8,14 +8,15 @@ import {
   Alert,
 } from "@mui/material";
 import { supabase } from "../../../services/supabase";
+import { useAuth } from "../../../context/AuthContext";
 
 const getProfileName = (profile, fallback = "Unnamed user") =>
   profile?.full_name || profile?.email || fallback;
 
 const ParentMessagesPage = () => {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [students, setStudents] = useState([]);
-  const [selectedStudent, setSelectedStudent] = useState("");
+  const [selectedStudent, setSelectedStudent] = useStat("");
   const [teachers, setTeachers] = useState([]);
   const [selectedTeacher, setSelectedTeacher] = useState("");
   const [message, setMessage] = useState("");
@@ -25,16 +26,6 @@ const ParentMessagesPage = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [notice, setNotice] = useState("");
-
-  // get current user
-  useEffect(() => {
-    const getUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      setUser(data?.user);
-    };
-
-    getUser();
-  }, []);
 
   // load students
   useEffect(() => {

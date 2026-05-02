@@ -3,13 +3,17 @@ import { Card, CardContent, Chip, Stack, Typography } from "@mui/material";
 const SummaryCard = ({ label, value, helper, accent = "primary" }) => (
   <Card
     sx={{
+      border: 1,
+      borderColor: "divider",
+      boxShadow: "0 10px 24px rgba(15, 23, 42, 0.05)",
       height: "100%",
       transition: (theme) =>
-        theme.transitions.create(["box-shadow", "transform"], {
+        theme.transitions.create(["border-color", "box-shadow", "transform"], {
           duration: theme.transitions.duration.short,
         }),
       "&:hover": {
-        boxShadow: "0 14px 34px rgba(15, 23, 42, 0.10)",
+        borderColor: "rgba(30, 58, 138, 0.25)",
+        boxShadow: "0 16px 34px rgba(15, 23, 42, 0.10)",
         transform: "translateY(-2px)",
       },
     }}

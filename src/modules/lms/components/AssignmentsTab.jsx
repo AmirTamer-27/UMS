@@ -83,11 +83,16 @@ const AssignmentsTab = ({ courseOfferingId, userRole, userId }) => {
       )}
 
       {isInstructor && (
-        <Card sx={{ mb: 4, bgcolor: "background.paper" }}>
-          <CardContent>
-            <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
-              Create New Assignment
-            </Typography>
+        <Card sx={{ mb: 4, bgcolor: "background.paper", border: 1, borderColor: "divider" }}>
+          <CardContent sx={{ p: 3 }}>
+            <Stack spacing={0.5} sx={{ mb: 2.5 }}>
+              <Typography variant="h6" fontWeight={900}>
+                Create New Assignment
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Post coursework with a due date for registered students.
+              </Typography>
+            </Stack>
             <form onSubmit={handleCreate}>
               <Stack spacing={3}>
                 <TextField
@@ -138,20 +143,30 @@ const AssignmentsTab = ({ courseOfferingId, userRole, userId }) => {
         </Card>
       )}
 
-      <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
-        Assignments
-      </Typography>
+      <Stack direction="row" alignItems="baseline" justifyContent="space-between" sx={{ mb: 2 }}>
+        <Typography variant="h6" fontWeight={900}>
+          Assignments
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {assignments.length} item{assignments.length === 1 ? "" : "s"}
+        </Typography>
+      </Stack>
 
       {assignments.length === 0 ? (
-        <Typography color="text.secondary">No assignments posted yet.</Typography>
+        <Card sx={{ border: 1, borderColor: "divider" }}>
+          <CardContent>
+            <Typography color="text.secondary">No assignments posted yet.</Typography>
+          </CardContent>
+        </Card>
       ) : (
-        <List sx={{ bgcolor: "background.paper", borderRadius: 1 }}>
+        <List sx={{ bgcolor: "background.paper", border: 1, borderColor: "divider", borderRadius: 1 }}>
           {assignments.map((assignment) => (
             <ListItem
               key={assignment.id}
               divider
               sx={{
                 cursor: "pointer",
+                py: 1.5,
                 "&:hover": { bgcolor: "rgba(30, 58, 138, 0.04)" },
               }}
               onClick={() => navigate(`/lms/courses/${courseOfferingId}/assignments/${assignment.id}`)}

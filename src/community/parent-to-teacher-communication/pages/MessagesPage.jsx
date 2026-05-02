@@ -1,18 +1,17 @@
 import { useEffect, useState } from "react";
 import { Box, Typography, Paper, Divider } from "@mui/material";
 import { supabase } from "../../../services/supabase";
+import { useAuth } from "../../../context/AuthContext";
 
 const MessagesPage = () => {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [messages, setMessages] = useState([]);
   const [profilesMap, setProfilesMap] = useState({});
   const [conversationsMap, setConversationsMap] = useState({});
 
   useEffect(() => {
     const loadData = async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      const currentUser = userData?.user;
-      setUser(currentUser);
+      const currentUser = user;
 
       if (!currentUser) return;
 
@@ -64,7 +63,7 @@ const MessagesPage = () => {
     };
 
     loadData();
-  }, []);
+  }, [user]);
 
   return (
     <Box p={3}>

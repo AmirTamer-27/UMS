@@ -38,14 +38,20 @@ const baseNavigation = [
 
 const adminNavigationItems = [
   { label: "Students", path: "/admin/student-records", icon: PeopleAltOutlinedIcon },
-  { label: "Admin", path: "/admin/course-offerings", icon: AdminPanelSettingsOutlinedIcon },
+  { label: "Course Offerings", path: "/admin/course-offerings", icon: AdminPanelSettingsOutlinedIcon },
 ];
+
+const roleAliases = {
+  teacher: "instructor",
+  staff: "instructor",
+};
 
 const MainLayout = ({ children, profile }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
   const role = profile?.role || "student";
+  const navigationRole = roleAliases[role] || role;
   const displayName = profile?.name || profile?.full_name || "User";
 
   const initials = displayName
@@ -56,20 +62,17 @@ const MainLayout = ({ children, profile }) => {
     .toUpperCase();
 
   const navigation = useMemo(() => {
-    const coursesItem =
-      role === "admin"
-        ? { ...baseNavigation[1], path: "/admin/course-offerings" }
-        : baseNavigation[1];
-    const roleNavigation = [
-      baseNavigation[0],
-      coursesItem,
-      ...baseNavigation.slice(2, 3),
-    ];
+    const [dashboard, courses, rooms, messages] = baseNavigation;
 
-    return role === "admin"
-      ? [...roleNavigation, ...adminNavigationItems, baseNavigation[3]]
-      : roleNavigation;
-  }, [role]);
+    const navigationByRole = {
+      admin: [dashboard, ...adminNavigationItems, messages],
+      student: [dashboard, courses, messages],
+      instructor: [dashboard, rooms, messages],
+      parent: [dashboard, messages],
+    };
+
+    return navigationByRole[navigationRole] || navigationByRole.student;
+  }, [navigationRole]);
 
   const getIsActive = (path) => {
     if (path === "/dashboard") return location.pathname === "/dashboard";

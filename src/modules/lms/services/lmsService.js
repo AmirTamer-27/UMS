@@ -1,5 +1,28 @@
 import { supabase } from '../../../services/supabase';
 
+const LMS_STORAGE_BUCKET = 'course-materials';
+
+const getCourseMaterialFileType = (file) => {
+  if (!file) return 'other';
+
+  const extension = file.name.split('.').pop()?.toLowerCase();
+  const mimeType = file.type || '';
+
+  if (extension === 'pdf' || mimeType === 'application/pdf') return 'pdf';
+  if (mimeType.startsWith('video/')) return 'video';
+  if (
+    ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt', 'csv'].includes(extension) ||
+    mimeType.startsWith('text/') ||
+    mimeType.includes('document') ||
+    mimeType.includes('presentation') ||
+    mimeType.includes('spreadsheet')
+  ) {
+    return 'document';
+  }
+
+  return 'other';
+};
+
 export const getCourseMaterials = async (courseOfferingId) => {
   const { data, error } = await supabase
     .from('course_materials')
@@ -12,7 +35,7 @@ export const getCourseMaterials = async (courseOfferingId) => {
 
 export const getMaterialDownloadUrl = async (filePath) => {
   if (!filePath) return null;
-  const { data } = supabase.storage.from('lms-storage').getPublicUrl(filePath);
+  const { data } = supabase.storage.from(LMS_STORAGE_BUCKET).getPublicUrl(filePath);
   return data.publicUrl;
 };
 
@@ -24,14 +47,14 @@ export const uploadMaterial = async (courseOfferingId, title, file, userId) => {
     filePath = `materials/${courseOfferingId}/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
-      .from('lms-storage')
+      .from(LMS_STORAGE_BUCKET)
       .upload(filePath, file);
 
     if (uploadError) {
-      console.error("Storage upload failed. Ensure bucket 'lms-storage' exists.", uploadError);
+      console.error(`Storage upload failed. Ensure bucket '${LMS_STORAGE_BUCKET}' exists.`, uploadError);
       // For MVP, if storage fails we might want to just let it throw or save without file.
       // We will throw to notify the user.
-      throw new Error(`Upload failed: ${uploadError.message}. Did you create the lms-storage bucket?`);
+      throw new Error(`Upload failed: ${uploadError.message}. Check the ${LMS_STORAGE_BUCKET} storage bucket.`);
     }
   }
 
@@ -42,7 +65,7 @@ export const uploadMaterial = async (courseOfferingId, title, file, userId) => {
         course_offering_id: courseOfferingId,
         title,
         file_path: filePath,
-        file_type: file?.type || 'other',
+        file_type: getCourseMaterialFileType(file),
         uploaded_by: userId
       }
     ])
@@ -109,12 +132,12 @@ export const submitAssignment = async (assignmentId, studentId, text, file) => {
     filePath = `submissions/${assignmentId}/${studentId}/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
-      .from('lms-storage')
+      .from(LMS_STORAGE_BUCKET)
       .upload(filePath, file);
 
     if (uploadError) {
       console.error("Storage upload failed.", uploadError);
-      throw new Error(`Upload failed: ${uploadError.message}. Did you create the lms-storage bucket?`);
+      throw new Error(`Upload failed: ${uploadError.message}. Check the ${LMS_STORAGE_BUCKET} storage bucket.`);
     }
   }
 

@@ -8,6 +8,15 @@ import SummaryCard from "./SummaryCard";
 
 const StudentDashboard = ({ data, loading }) => {
   const navigate = useNavigate();
+  const firstRegisteredOfferingId = data.registeredOfferings?.[0]?.id;
+
+  const getOfferingName = (offering) => {
+    const courseCode = offering.courses?.code;
+    const courseName = offering.courses?.name;
+
+    if (courseCode && courseName) return `${courseCode} - ${courseName}`;
+    return courseName || `Course Offering (ID: ${offering.id.substring(0, 8)})`;
+  };
 
   const cards = [
     {
@@ -34,12 +43,6 @@ const StudentDashboard = ({ data, loading }) => {
       helper: "available",
       accent: "primary",
     },
-    {
-      label: "Room Bookings",
-      value: data.roomBookings?.length || 0,
-      helper: "reserved",
-      accent: "secondary",
-    },
   ];
 
   return (
@@ -52,7 +55,7 @@ const StudentDashboard = ({ data, loading }) => {
         ))}
       </Grid>
 
-      <Card sx={{ bgcolor: "background.paper" }}>
+      <Card sx={{ bgcolor: "background.paper", border: 1, borderColor: "divider" }}>
         <CardContent>
           <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
             My Courses (LMS)
@@ -60,15 +63,23 @@ const StudentDashboard = ({ data, loading }) => {
           {!loading && data.registeredOfferings?.length === 0 ? (
             <Typography color="text.secondary">No courses registered.</Typography>
           ) : (
-            <List>
+            <List disablePadding>
               {data.registeredOfferings?.map((offering) => (
-                <ListItem key={offering.id} disablePadding divider>
-                  <ListItemButton onClick={() => navigate(`/lms/courses/${offering.id}`)}>
+                <ListItem key={offering.id} disablePadding sx={{ mb: 1 }}>
+                  <ListItemButton
+                    onClick={() => navigate(`/lms/courses/${offering.id}`)}
+                    sx={{
+                      border: 1,
+                      borderColor: "divider",
+                      borderRadius: 1,
+                      py: 1.25,
+                    }}
+                  >
                     <ListItemIcon>
                       <MenuBookOutlinedIcon color="primary" />
                     </ListItemIcon>
                     <ListItemText 
-                      primary={`Course Offering (ID: ${offering.id.substring(0, 8)})`} 
+                      primary={getOfferingName(offering)}
                       secondary="Click to view materials and assignments" 
                     />
                   </ListItemButton>
@@ -83,7 +94,14 @@ const StudentDashboard = ({ data, loading }) => {
         actions={[
           { label: "Browse Courses", onClick: () => navigate("/courses/registration") },
           { label: "My Registrations", color: "secondary", variant: "outlined" },
-          { label: "Submit Assignment", color: "warning" },
+          {
+            label: "Submit Assignment",
+            color: "warning",
+            onClick: () => (
+              firstRegisteredOfferingId &&
+              navigate(`/lms/courses/${firstRegisteredOfferingId}?tab=assignments`)
+            ),
+          },
         ]}
       />
       <RecentActivityCard>

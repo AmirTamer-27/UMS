@@ -13,12 +13,19 @@ import {
 import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import { useNavigate } from "react-router-dom";
 
-import QuickActions from "./QuickActions";
 import RecentActivityCard from "./RecentActivityCard";
 import SummaryCard from "./SummaryCard";
 
 const InstructorDashboard = ({ data, loading }) => {
   const navigate = useNavigate();
+
+  const getOfferingName = (offering) => {
+    const courseCode = offering.courses?.code;
+    const courseName = offering.courses?.name;
+
+    if (courseCode && courseName) return `${courseCode} - ${courseName}`;
+    return courseName || `Course Offering (ID: ${offering.id.substring(0, 8)})`;
+  };
 
   const cards = [
     {
@@ -28,13 +35,13 @@ const InstructorDashboard = ({ data, loading }) => {
       accent: "primary",
     },
     {
-      label: "Upload Materials",
+      label: "Course Materials",
       value: data.courseMaterials?.length || 0,
       helper: "files",
       accent: "secondary",
     },
     {
-      label: "Create Assignments",
+      label: "Assignments",
       value: data.assignments?.length || 0,
       helper: "created",
       accent: "warning",
@@ -69,22 +76,7 @@ const InstructorDashboard = ({ data, loading }) => {
         ))}
       </Grid>
 
-      <QuickActions
-        actions={[
-          {
-            label: "Upload Material",
-            onClick: () => data.courseOfferings?.[0]?.id && navigate(`/lms/courses/${data.courseOfferings[0].id}`),
-          },
-          {
-            label: "Create Assignment",
-            color: "warning",
-            onClick: () => data.courseOfferings?.[0]?.id && navigate(`/lms/courses/${data.courseOfferings[0].id}`),
-          },
-          { label: "View Submissions", color: "secondary", variant: "outlined" },
-        ]}
-      />
-
-      <Card sx={{ bgcolor: "background.paper" }}>
+      <Card sx={{ bgcolor: "background.paper", border: 1, borderColor: "divider" }}>
         <CardContent>
           <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
             My Courses (LMS)
@@ -92,15 +84,23 @@ const InstructorDashboard = ({ data, loading }) => {
           {!loading && data.courseOfferings?.length === 0 ? (
             <Typography color="text.secondary">No course offerings assigned.</Typography>
           ) : (
-            <List>
+            <List disablePadding>
               {data.courseOfferings?.map((offering) => (
-                <ListItem key={offering.id} disablePadding divider>
-                  <ListItemButton onClick={() => navigate(`/lms/courses/${offering.id}`)}>
+                <ListItem key={offering.id} disablePadding sx={{ mb: 1 }}>
+                  <ListItemButton
+                    onClick={() => navigate(`/lms/courses/${offering.id}`)}
+                    sx={{
+                      border: 1,
+                      borderColor: "divider",
+                      borderRadius: 1,
+                      py: 1.25,
+                    }}
+                  >
                     <ListItemIcon>
                       <MenuBookOutlinedIcon color="primary" />
                     </ListItemIcon>
                     <ListItemText
-                      primary={`Course Offering (ID: ${offering.id.substring(0, 8)})`}
+                      primary={getOfferingName(offering)}
                       secondary="Upload materials, create assignments, and review submissions"
                     />
                   </ListItemButton>

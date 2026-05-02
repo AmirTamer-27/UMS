@@ -60,7 +60,7 @@ const loadStudentDashboardData = async (userId) => {
   const registrations = await fetchRows(
     supabase
       .from("registrations")
-      .select("*, course_offerings(*)")
+      .select("*, course_offerings(*, courses(name, code), semesters(name))")
       .eq("student_user_id", userId)
       .eq("status", "registered"),
   );
@@ -68,7 +68,7 @@ const loadStudentDashboardData = async (userId) => {
     .map((registration) => registration.course_offering_id)
     .filter(Boolean);
 
-  const [courseOfferings, assignments, courseMaterials, roomBookings] =
+  const [courseOfferings, assignments, courseMaterials] =
     await Promise.all([
       fetchRows(supabase.from("course_offerings").select("*").eq("published", true)),
       selectByIds(
@@ -81,9 +81,6 @@ const loadStudentDashboardData = async (userId) => {
         "course_offering_id",
         offeringIds,
       ),
-      fetchRows(
-        supabase.from("room_bookings").select("*").eq("booked_by_user_id", userId),
-      ),
     ]);
 
   return {
@@ -95,13 +92,15 @@ const loadStudentDashboardData = async (userId) => {
     courseOfferings,
     assignments,
     courseMaterials,
-    roomBookings,
   };
 };
 
 const loadInstructorDashboardData = async (userId) => {
   const courseOfferings = await fetchRows(
-    supabase.from("course_offerings").select("*").eq("instructor_user_id", userId),
+    supabase
+      .from("course_offerings")
+      .select("*, courses(name, code), semesters(name)")
+      .eq("instructor_user_id", userId),
   );
   const offeringIds = courseOfferings.map((offering) => offering.id).filter(Boolean);
 
@@ -255,7 +254,10 @@ const RoleBasedDashboard = ({ profile, user }) => {
         <Grid item xs={12}>
           <Card
             sx={{
-              bgcolor: "background.paper",
+              bgcolor: "rgba(255, 255, 255, 0.92)",
+              border: 1,
+              borderColor: "divider",
+              boxShadow: "0 14px 34px rgba(15, 23, 42, 0.06)",
               overflow: "hidden",
               width: "100%",
             }}
@@ -268,10 +270,15 @@ const RoleBasedDashboard = ({ profile, user }) => {
                 spacing={2}
               >
                 <Box>
-                  <Typography color="text.secondary" fontWeight={800} variant="body1">
+                  <Typography color="text.secondary" fontWeight={800} variant="body2">
                     Welcome back
                   </Typography>
-                  <Typography color="text.primary" fontWeight={900} variant="h3">
+                  <Typography
+                    color="text.primary"
+                    fontWeight={900}
+                    sx={{ mt: 0.5 }}
+                    variant="h3"
+                  >
                     {profile?.name || "University User"}
                   </Typography>
                 </Box>

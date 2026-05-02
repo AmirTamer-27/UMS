@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Box,
   Container,
@@ -16,42 +16,33 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
 import MainLayout from "../../../shared/components/layout/MainLayout";
 import { supabase } from "../../../services/supabase";
+import { useAuth } from "../../../context/AuthContext";
 import MaterialsTab from "../components/MaterialsTab";
 import AssignmentsTab from "../components/AssignmentsTab";
 
 const CourseOfferingPage = () => {
   const { courseOfferingId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { profile, user } = useAuth();
 
   const [courseOffering, setCourseOffering] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [tabIndex, setTabIndex] = useState(0);
+  const [tabIndex, setTabIndex] = useState(searchParams.get("tab") === "assignments" ? 1 : 0);
 
   useEffect(() => {
-    loadCourseAndUser();
+    loadCourseOffering();
   }, [courseOfferingId]);
 
-  const loadCourseAndUser = async () => {
+  useEffect(() => {
+    setTabIndex(searchParams.get("tab") === "assignments" ? 1 : 0);
+  }, [searchParams]);
+
+  const loadCourseOffering = async () => {
     try {
       setLoading(true);
 
-      // Get current user and profile
-      const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser();
-      if (authError || !currentUser) throw new Error("Not authenticated");
-      setUser(currentUser);
-
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", currentUser.id)
-        .single();
-      if (profileError) throw profileError;
-      setProfile(profileData);
-
-      // Get course offering details
       const { data: offeringData, error: offeringError } = await supabase
         .from("course_offerings")
         .select("*, courses(name, code), semesters(name)")
@@ -92,12 +83,26 @@ const CourseOfferingPage = () => {
 
         {courseOffering && (
           <Box sx={{ mb: 4 }}>
-            <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-              <IconButton onClick={() => navigate(-1)} sx={{ mr: 2 }}>
+            <Box
+              sx={{
+                alignItems: "center",
+                display: "flex",
+                gap: 2,
+                mb: 3,
+              }}
+            >
+              <IconButton
+                onClick={() => navigate(-1)}
+                sx={{
+                  border: 1,
+                  borderColor: "divider",
+                  bgcolor: "background.paper",
+                }}
+              >
                 <ArrowBackIcon />
               </IconButton>
               <Box>
-                <Typography variant="h4" fontWeight="900" color="primary">
+                <Typography variant="h4" fontWeight="900" color="primary" sx={{ lineHeight: 1.15 }}>
                   {courseOffering.courses?.code} - {courseOffering.courses?.name}
                 </Typography>
                 <Typography variant="subtitle1" color="text.secondary">
@@ -106,13 +111,27 @@ const CourseOfferingPage = () => {
               </Box>
             </Box>
 
-            <Card sx={{ bgcolor: "background.paper", mb: 4 }}>
+            <Card
+              sx={{
+                bgcolor: "background.paper",
+                border: 1,
+                borderColor: "divider",
+                boxShadow: "0 10px 26px rgba(15, 23, 42, 0.06)",
+                mb: 3,
+              }}
+            >
               <Tabs
                 value={tabIndex}
                 onChange={handleTabChange}
                 indicatorColor="primary"
                 textColor="primary"
                 variant="fullWidth"
+                sx={{
+                  "& .MuiTab-root": {
+                    fontWeight: 800,
+                    minHeight: 58,
+                  },
+                }}
               >
                 <Tab label="Materials" />
                 <Tab label="Assignments" />

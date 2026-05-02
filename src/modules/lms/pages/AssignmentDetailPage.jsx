@@ -25,7 +25,7 @@ import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
 
 import MainLayout from "../../../shared/components/layout/MainLayout";
-import { supabase } from "../../../services/supabase";
+import { useAuth } from "../../../context/AuthContext";
 import {
   getAssignmentDetails,
   getAssignmentSubmissions,
@@ -37,10 +37,9 @@ import {
 const AssignmentDetailPage = () => {
   const { assignmentId, courseOfferingId } = useParams();
   const navigate = useNavigate();
+  const { profile, user } = useAuth();
 
   const [assignment, setAssignment] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -54,35 +53,24 @@ const AssignmentDetailPage = () => {
   const [submitError, setSubmitError] = useState("");
 
   useEffect(() => {
+    if (!user?.id || !profile) return;
     loadData();
-  }, [assignmentId]);
+  }, [assignmentId, profile, user?.id]);
 
   const loadData = async () => {
     try {
       setLoading(true);
 
-      const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser();
-      if (authError || !currentUser) throw new Error("Not authenticated");
-      setUser(currentUser);
-
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", currentUser.id)
-        .single();
-      if (profileError) throw profileError;
-      setProfile(profileData);
-
       const assignmentData = await getAssignmentDetails(assignmentId);
       setAssignment(assignmentData);
 
-      const isInstructor = profileData.role === "instructor" || profileData.role === "admin" || profileData.role === "teacher" || profileData.role === "staff";
+      const isInstructor = profile.role === "instructor" || profile.role === "admin" || profile.role === "teacher" || profile.role === "staff";
 
       if (isInstructor) {
         const subs = await getAssignmentSubmissions(assignmentId);
         setSubmissions(subs || []);
       } else {
-        const mySub = await getMySubmission(assignmentId, currentUser.id);
+        const mySub = await getMySubmission(assignmentId, user.id);
         setMySubmission(mySub);
       }
 

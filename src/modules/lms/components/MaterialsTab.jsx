@@ -1,20 +1,19 @@
 import { useState, useEffect } from "react";
 import {
+  Alert,
   Box,
   Button,
   Card,
   CardContent,
-  Grid,
+  CircularProgress,
+  IconButton,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
   Stack,
   TextField,
   Typography,
-  Alert,
-  CircularProgress,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  IconButton,
 } from "@mui/material";
 import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
 import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
@@ -103,11 +102,16 @@ const MaterialsTab = ({ courseOfferingId, userRole, userId }) => {
       )}
 
       {isInstructor && (
-        <Card sx={{ mb: 4, bgcolor: "background.paper" }}>
-          <CardContent>
-            <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
-              Upload New Material
-            </Typography>
+        <Card sx={{ mb: 4, bgcolor: "background.paper", border: 1, borderColor: "divider" }}>
+          <CardContent sx={{ p: 3 }}>
+            <Stack spacing={0.5} sx={{ mb: 2.5 }}>
+              <Typography variant="h6" fontWeight={900}>
+                Upload New Material
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Share lecture files and resources with registered students.
+              </Typography>
+            </Stack>
             <form onSubmit={handleUpload}>
               <Stack spacing={3}>
                 <TextField
@@ -151,18 +155,28 @@ const MaterialsTab = ({ courseOfferingId, userRole, userId }) => {
         </Card>
       )}
 
-      <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
-        Course Materials
-      </Typography>
+      <Stack direction="row" alignItems="baseline" justifyContent="space-between" sx={{ mb: 2 }}>
+        <Typography variant="h6" fontWeight={900}>
+          Course Materials
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {materials.length} item{materials.length === 1 ? "" : "s"}
+        </Typography>
+      </Stack>
 
       {materials.length === 0 ? (
-        <Typography color="text.secondary">No materials uploaded yet.</Typography>
+        <Card sx={{ border: 1, borderColor: "divider" }}>
+          <CardContent>
+            <Typography color="text.secondary">No materials uploaded yet.</Typography>
+          </CardContent>
+        </Card>
       ) : (
-        <List sx={{ bgcolor: "background.paper", borderRadius: 1 }}>
+        <List sx={{ bgcolor: "background.paper", border: 1, borderColor: "divider", borderRadius: 1 }}>
           {materials.map((mat) => (
             <ListItem
               key={mat.id}
               divider
+              sx={{ py: 1.5 }}
               secondaryAction={
                 mat.file_path && (
                   <IconButton
