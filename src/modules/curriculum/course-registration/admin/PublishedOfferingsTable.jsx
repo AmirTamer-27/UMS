@@ -13,7 +13,16 @@ export default function PublishedOfferingsTable({ refreshKey = 0 }) {
           if (isSupabaseConfigured && supabase) {
             const { data, error } = await supabase
               .from('course_offerings')
-              .select('id, semester_id, seat_limit, published, created_at, course:course_id(name), semester:semester_id(name)')
+              .select(`
+                id,
+                semester_id,
+                seat_limit,
+                published,
+                created_at,
+                course:course_id(name),
+                semester:semester_id(name),
+                instructor:profiles!course_offerings_instructor_user_id_fkey(full_name, email)
+              `)
               .order('created_at', { ascending: false });
             if (error) return console.error(error);
             if (mounted) setRows(data || []);
@@ -46,6 +55,7 @@ export default function PublishedOfferingsTable({ refreshKey = 0 }) {
             <TableRow>
             <TableCell>Course</TableCell>
             <TableCell>Semester</TableCell>
+            <TableCell>Instructor</TableCell>
             <TableCell>Seats</TableCell>
             <TableCell>Published</TableCell>
             <TableCell align="right">Actions</TableCell>
@@ -54,7 +64,7 @@ export default function PublishedOfferingsTable({ refreshKey = 0 }) {
         <TableBody>
           {rows.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5}>
+              <TableCell colSpan={6}>
                 <Typography>No offerings</Typography>
               </TableCell>
             </TableRow>
@@ -63,6 +73,7 @@ export default function PublishedOfferingsTable({ refreshKey = 0 }) {
                 <TableRow key={r.id}>
                   <TableCell>{r.course?.name || r.course?.title || r.course?.course_name || '—'}</TableCell>
                   <TableCell>{r.semester?.name || r.semester_id || '—'}</TableCell>
+                  <TableCell>{r.instructor?.full_name || r.instructor?.email || 'Staff TBA'}</TableCell>
                   <TableCell>{r.seat_limit}</TableCell>
                 <TableCell>
                   <Switch checked={r.published} onChange={(e) => togglePublish(r.id, e.target.checked)} />

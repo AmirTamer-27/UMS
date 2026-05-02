@@ -9,8 +9,15 @@ import { Autocomplete, TextField as MuiTextField } from '@mui/material';
 export default function OfferingForm({ onOfferingCreated }) {
   const [courses, setCourses] = useState([]);
   const [semesters, setSemesters] = useState([]);
+  const [staffMembers, setStaffMembers] = useState([]);
   const [courseInput, setCourseInput] = useState('');
-  const [form, setForm] = useState({ course_id: '', semester_id: '', seats: '', prerequisites: [] });
+  const [form, setForm] = useState({
+    course_id: '',
+    semester_id: '',
+    instructor_user_id: '',
+    seats: '',
+    prerequisites: [],
+  });
   const [message, setMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -68,9 +75,67 @@ export default function OfferingForm({ onOfferingCreated }) {
     return () => (mounted = false);
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadStaffMembers() {
+      try {
+        if (!isSupabaseConfigured || !supabase) return;
+
+        const { data, error } = await supabase
+          .from('staff_profiles')
+          .select(`
+            user_id,
+            staff_number,
+            title,
+            profile:profiles!staff_profiles_user_id_fkey (
+              id,
+              full_name,
+              email,
+              role
+            )
+          `)
+          .order('staff_number');
+
+        if (error) {
+          console.error('Failed to load staff members', error);
+          return;
+        }
+
+        if (mounted) {
+          setStaffMembers(
+            (data || [])
+              .filter((staff) => staff.profile?.role === 'teacher' || staff.profile?.role === 'staff')
+              .map((staff) => ({
+                id: staff.user_id,
+                name: staff.profile?.full_name || staff.profile?.email || staff.user_id,
+                title: staff.title || '',
+              })),
+          );
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    loadStaffMembers();
+    return () => (mounted = false);
+  }, []);
+
   function handleChange(e) {
     const { name, value } = e.target;
     setForm((s) => ({ ...s, [name]: value }));
+  }
+
+  function resetForm() {
+    setForm((currentForm) => ({
+      course_id: '',
+      semester_id: currentForm.semester_id,
+      instructor_user_id: '',
+      seats: '',
+      prerequisites: [],
+    }));
+    setCourseInput('');
   }
 
   async function handleSubmit(e) {
@@ -84,6 +149,22 @@ export default function OfferingForm({ onOfferingCreated }) {
     }
 
     try {
+      const semesterId = form.semester_id;
+      const seatLimit = Number(form.seats);
+
+      if (!semesterId) {
+        setErrorMessage('Select a semester before creating an offering.');
+        return;
+      }
+      if (!form.instructor_user_id) {
+        setErrorMessage('Select a staff member to teach this offering.');
+        return;
+      }
+      if (!Number.isInteger(seatLimit) || seatLimit <= 0) {
+        setErrorMessage('Enter a valid seat limit greater than 0.');
+        return;
+      }
+
       // determine course id: if form.course_id already set use it, else try to create a course from courseInput
       let courseId = form.course_id;
       if (!courseId) {
@@ -126,13 +207,18 @@ export default function OfferingForm({ onOfferingCreated }) {
             if (courseErr?.code === '42501' || courseErr?.status === 401 || courseErr?.message?.toLowerCase?.().includes('row-level security')) {
               const queued = offeringQueue.enqueueOffering({
                 course: { name, code, credit_hours: 3, course_type: 'core' },
-                payload: { course_id: null, semester_id: form.semester_id, seat_limit: Number(form.seats), published: false },
+                payload: {
+                  course_id: null,
+                  semester_id: form.semester_id,
+                  instructor_user_id: form.instructor_user_id,
+                  seat_limit: Number(form.seats),
+                  published: false,
+                },
                 prerequisites: form.prerequisites,
               });
               console.warn('Course creation blocked by RLS/auth — offering queued locally (#' + queued + ')');
               // Reset form for user to continue using UI; queued items will be retried when policies/keys are fixed
-              setForm((currentForm) => ({ course_id: '', semester_id: currentForm.semester_id, seats: '', prerequisites: [] }));
-              setCourseInput('');
+              resetForm();
               return;
             }
             setErrorMessage(courseErr.message);
@@ -141,20 +227,9 @@ export default function OfferingForm({ onOfferingCreated }) {
           courseId = courseData?.[0]?.id;
         }
       }
-      const semesterId = form.semester_id;
-      const seatLimit = Number(form.seats);
-
       // Validate required UUID fields before sending to Supabase
       if (!courseId) {
         setErrorMessage('Cannot create offering: no course selected or created.');
-        return;
-      }
-      if (!semesterId) {
-        setErrorMessage('Select a semester before creating an offering.');
-        return;
-      }
-      if (!Number.isInteger(seatLimit) || seatLimit <= 0) {
-        setErrorMessage('Enter a valid seat limit greater than 0.');
         return;
       }
 
@@ -178,6 +253,7 @@ export default function OfferingForm({ onOfferingCreated }) {
       const payload = {
         course_id: courseId,
         semester_id: semesterId,
+        instructor_user_id: form.instructor_user_id,
         seat_limit: seatLimit,
         published: false,
       };
@@ -190,8 +266,7 @@ export default function OfferingForm({ onOfferingCreated }) {
             courseId, payload, prerequisites: form.prerequisites,
           });
           console.warn('Offering creation blocked by RLS/auth — queued locally (#' + queued + ')');
-          setForm((currentForm) => ({ course_id: '', semester_id: currentForm.semester_id, seats: '', prerequisites: [] }));
-          setCourseInput('');
+          resetForm();
           return;
         }
         setErrorMessage(error.message);
@@ -204,8 +279,7 @@ export default function OfferingForm({ onOfferingCreated }) {
         if (preErr) console.error(preErr);
       }
 
-      setForm((currentForm) => ({ course_id: '', semester_id: currentForm.semester_id, seats: '', prerequisites: [] }));
-      setCourseInput('');
+      resetForm();
       setMessage('Course offering created successfully.');
       onOfferingCreated?.();
     } catch (err) {
@@ -214,8 +288,7 @@ export default function OfferingForm({ onOfferingCreated }) {
   }
 
   function handleCancel() {
-    setForm((currentForm) => ({ course_id: '', semester_id: currentForm.semester_id, seats: '', prerequisites: [] }));
-    setCourseInput('');
+    resetForm();
     setMessage('');
     setErrorMessage('');
   }
@@ -282,6 +355,28 @@ export default function OfferingForm({ onOfferingCreated }) {
         </Grid>
 
         <Grid item xs={12} md={6}>
+          <TextField
+            select
+            fullWidth
+            label="Instructor"
+            name="instructor_user_id"
+            value={form.instructor_user_id}
+            onChange={handleChange}
+            helperText={
+              staffMembers.length === 0
+                ? 'No teacher or staff profiles found.'
+                : 'Select the staff member who will teach this offering.'
+            }
+          >
+            {staffMembers.map((staff) => (
+              <MenuItem key={staff.id} value={staff.id}>
+                {staff.name}{staff.title ? ` — ${staff.title}` : ''}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Grid>
+
+        <Grid item xs={12}>
           <PrerequisiteSelector value={form.prerequisites} onChange={(v) => setForm((s) => ({ ...s, prerequisites: v }))} />
         </Grid>
 

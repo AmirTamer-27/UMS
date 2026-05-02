@@ -3,7 +3,7 @@ import { Box, Button, MenuItem, TextField, Typography } from "@mui/material";
 import { supabase } from "../../../services/supabase";
 
 const getProfileName = (profile, fallback = "Unnamed user") =>
-  profile?.full_name || profile?.name || profile?.email || fallback;
+  profile?.full_name || profile?.email || fallback;
 
 const TeacherMessagesPage = () => {
   const [students, setStudents] = useState([]);
@@ -11,6 +11,8 @@ const TeacherMessagesPage = () => {
   const [selectedStudent, setSelectedStudent] = useState("");
   const [selectedParent, setSelectedParent] = useState("");
   const [message, setMessage] = useState("");
+  const [threadMessages, setThreadMessages] = useState([]);
+  const [threadRefreshKey, setThreadRefreshKey] = useState(0);
 
   // auth user
   const [currentUser, setCurrentUser] = useState(null);
@@ -39,21 +41,6 @@ const TeacherMessagesPage = () => {
       setErrorMsg("");
       setNotice("");
 
-      const loadAllStudents = async () => {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("id, full_name, name, email")
-          .eq("role", "student")
-          .order("full_name");
-
-        if (error) {
-          setErrorMsg(error.message);
-          return [];
-        }
-
-        return data || [];
-      };
-
       const { data: offerings, error: offeringsError } = await supabase
         .from("course_offerings")
         .select("id")
@@ -67,11 +54,8 @@ const TeacherMessagesPage = () => {
       const offeringIds = (offerings || []).map((offering) => offering.id);
 
       if (!offeringIds.length) {
-        const fallbackStudents = await loadAllStudents();
-        setStudents(fallbackStudents);
-        if (fallbackStudents.length) {
-          setNotice("No assigned course students were found, so all student profiles are shown.");
-        }
+        setStudents([]);
+        setNotice("No course offerings are assigned to you yet.");
         return;
       }
 
@@ -91,17 +75,14 @@ const TeacherMessagesPage = () => {
       ].filter(Boolean);
 
       if (!studentIds.length) {
-        const fallbackStudents = await loadAllStudents();
-        setStudents(fallbackStudents);
-        if (fallbackStudents.length) {
-          setNotice("No registered students were found for your offerings, so all student profiles are shown.");
-        }
+        setStudents([]);
+        setNotice("No registered students were found for your course offerings.");
         return;
       }
 
       const { data: studentProfiles, error: studentsError } = await supabase
         .from("profiles")
-        .select("id, full_name, name, email")
+        .select("id, full_name, email")
         .in("id", studentIds)
         .order("full_name");
 
@@ -122,6 +103,7 @@ const TeacherMessagesPage = () => {
 
     const loadParents = async () => {
       setSelectedParent("");
+      setThreadMessages([]);
       setErrorMsg("");
       setNotice("");
 
@@ -132,31 +114,14 @@ const TeacherMessagesPage = () => {
           parent:profiles!parent_student_links_parent_user_id_fkey (
             id,
             full_name,
-            name,
             email
           )
         `)
         .eq("student_user_id", selectedStudent);
 
       if (error) {
-        const { data: fallbackParents, error: fallbackError } = await supabase
-          .from("profiles")
-          .select("id, full_name, name, email")
-          .eq("role", "parent")
-          .order("full_name");
-
-        if (fallbackError) {
-          setErrorMsg(fallbackError.message);
-          return;
-        }
-
-        setParents((fallbackParents || []).map((parent) => ({
-          parent_user_id: parent.id,
-          parent,
-        })));
-        if (fallbackParents?.length) {
-          setNotice("No linked parents were found for this student, so all parent profiles are shown.");
-        }
+        setParents([]);
+        setErrorMsg(error.message);
         return;
       }
 
@@ -165,28 +130,54 @@ const TeacherMessagesPage = () => {
         return;
       }
 
-      const { data: fallbackParents, error: fallbackError } = await supabase
-        .from("profiles")
-        .select("id, full_name, name, email")
-        .eq("role", "parent")
-        .order("full_name");
-
-      if (fallbackError) {
-        setErrorMsg(fallbackError.message);
-        return;
-      }
-
-      setParents((fallbackParents || []).map((parent) => ({
-        parent_user_id: parent.id,
-        parent,
-      })));
-      if (fallbackParents?.length) {
-        setNotice("No linked parents were found for this student, so all parent profiles are shown.");
-      }
+      setParents([]);
+      setNotice("No linked parents were found for this student.");
     };
 
     loadParents();
   }, [selectedStudent]);
+
+  useEffect(() => {
+    if (!currentUser?.id || !selectedStudent || !selectedParent) {
+      setThreadMessages([]);
+      return;
+    }
+
+    const loadThread = async () => {
+      const { data: conversation, error: conversationError } = await supabase
+        .from("conversations")
+        .select("id")
+        .eq("student_user_id", selectedStudent)
+        .eq("teacher_user_id", currentUser.id)
+        .eq("parent_user_id", selectedParent)
+        .maybeSingle();
+
+      if (conversationError) {
+        setErrorMsg(conversationError.message);
+        return;
+      }
+
+      if (!conversation) {
+        setThreadMessages([]);
+        return;
+      }
+
+      const { data: messages, error } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("conversation_id", conversation.id)
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        setErrorMsg(error.message);
+        return;
+      }
+
+      setThreadMessages(messages || []);
+    };
+
+    loadThread();
+  }, [currentUser?.id, selectedStudent, selectedParent, threadRefreshKey]);
 
   const handleSend = async () => {
     if (!currentUser?.id) {
@@ -247,6 +238,7 @@ const TeacherMessagesPage = () => {
       // success
       setMessage("");
       setSuccess("Message sent successfully");
+      setThreadRefreshKey((key) => key + 1);
 
     } catch (err) {
       setErrorMsg(err.message || "Failed to send message");
@@ -289,7 +281,9 @@ const TeacherMessagesPage = () => {
         value={selectedStudent}
         onChange={(e) => {
           setSelectedStudent(e.target.value);
+          setSelectedParent("");
           setParents([]);
+          setThreadMessages([]);
         }}
         margin="normal"
       >
@@ -311,7 +305,10 @@ const TeacherMessagesPage = () => {
         fullWidth
         label="Select Parent"
         value={selectedParent}
-        onChange={(e) => setSelectedParent(e.target.value)}
+        onChange={(e) => {
+          setSelectedParent(e.target.value);
+          setThreadMessages([]);
+        }}
         margin="normal"
       >
         {!parents.length ? (
@@ -345,6 +342,32 @@ const TeacherMessagesPage = () => {
       >
         {sending ? "Sending..." : "Send Message"}
       </Button>
+
+      <Box mt={4}>
+        <Typography variant="h6" gutterBottom>
+          Conversation Thread
+        </Typography>
+        {!threadMessages.length ? (
+          <Typography color="text.secondary">No messages yet</Typography>
+        ) : (
+          threadMessages.map((threadMessage) => {
+            const isMe = threadMessage.sender_user_id === currentUser?.id;
+            const parent = parents.find((item) => item.parent_user_id === selectedParent);
+
+            return (
+              <Box key={threadMessage.id} sx={{ borderBottom: "1px solid #ddd", py: 1.5 }}>
+                <Typography fontWeight={700}>
+                  {isMe ? "You" : getProfileName(parent?.parent, selectedParent)}
+                </Typography>
+                <Typography>{threadMessage.message_body}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {new Date(threadMessage.created_at).toLocaleString()}
+                </Typography>
+              </Box>
+            );
+          })
+        )}
+      </Box>
     </Box>
   );
 };
