@@ -21,6 +21,8 @@ import ClassroomsPage from "../../facilities/classroom-laboratory-management/pag
 import StudentRecordsPage from "../../facilities/administrative-office-automation/pages/StudentRecordsPage";
 import AssignmentDetailPage from "../../modules/lms/pages/AssignmentDetailPage";
 import CourseOfferingPage from "../../modules/lms/pages/CourseOfferingPage";
+import ApplicationFormPage from "../../modules/admissions/pages/ApplicationFormPage";
+import AdminApplicationsPage from "../../modules/admissions/pages/AdminApplicationsPage";
 
 const AppRouter = () => (
   <Router future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
@@ -133,6 +135,18 @@ const AppRouter = () => (
           </ProtectedRoute>
         }
         path="/lms/courses/:courseOfferingId/assignments/:assignmentId"
+      />
+
+      {/* Public admission application (no auth required) */}
+      <Route element={<ApplicationFormPage />} path="/admissions/apply" />
+
+      <Route
+        element={
+          <ProtectedRoute>
+            <AdminApplicationsPage />
+          </ProtectedRoute>
+        }
+        path="/admin/applications"
       />
 
       <Route element={<Navigate replace to="/login" />} path="/" />

@@ -59,6 +59,12 @@ const AdminDashboard = ({ data, loading }) => {
             color: "warning",
             onClick: () => navigate("/admin/staff/create"),
           },
+          {
+            label: "Review Applications",
+            color: "info",
+            variant: "outlined",
+            onClick: () => navigate("/admin/applications"),
+          },
         ]}
       />
       <RecentActivityCard>

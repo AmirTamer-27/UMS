@@ -1,14 +1,18 @@
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
+import Divider from "@mui/material/Divider";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "../../../../context/AuthContext";
 import LoginForm from "../components/LoginForm";
 
 const LoginPage = () => {
   const { role } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <Box
@@ -87,6 +91,19 @@ const LoginPage = () => {
                 Signed in as {role}
               </Typography>
             ) : null}
+            <Divider sx={{ my: 3 }} />
+            <Box sx={{ textAlign: "center" }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                New to the university?
+              </Typography>
+              <Button
+                fullWidth
+                variant="outlined"
+                onClick={() => navigate("/admissions/apply")}
+              >
+                Apply for Admission
+              </Button>
+            </Box>
           </Paper>
         </Box>
       </Container>
