@@ -16,7 +16,7 @@ const getProfileName = (profile, fallback = "Unnamed user") =>
 const ParentMessagesPage = () => {
   const { user } = useAuth();
   const [students, setStudents] = useState([]);
-  const [selectedStudent, setSelectedStudent] = useStat("");
+  const [selectedStudent, setSelectedStudent] = useState("");
   const [teachers, setTeachers] = useState([]);
   const [selectedTeacher, setSelectedTeacher] = useState("");
   const [message, setMessage] = useState("");
