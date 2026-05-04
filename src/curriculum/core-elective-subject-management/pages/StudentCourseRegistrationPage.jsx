@@ -3,6 +3,7 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
 import Container from "@mui/material/Container";
+import TextField from "@mui/material/TextField";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
@@ -10,6 +11,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 
 import { useAuth } from "../../../context/AuthContext";
+import { supabase } from "../../../services/supabase/client";
 import { courseRegistrationService } from "../services/courseRegistration";
 import { useAvailableCourses } from "../hooks/useAvailableCourses";
 import AvailableCoursesSection from "../components/AvailableCoursesSection";
@@ -23,8 +25,12 @@ const StudentCourseRegistrationPage = () => {
     error: authError,
     refreshProfile,
   } = useAuth();
-  const { activeSemester, student, offerings, loading, error, refresh } =
+  const { activeSemester, student, offerings, loading: offeringsLoading, error, refresh } =
     useAvailableCourses(profile);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [searchError, setSearchError] = useState("");
   const [actionError, setActionError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [savingAction, setSavingAction] = useState("");
@@ -35,22 +41,99 @@ const StudentCourseRegistrationPage = () => {
     }
   }, [authLoading, profile, refreshProfile, user]);
 
+  useEffect(() => {
+    if (!profile?.id) {
+      setCourses([]);
+      setLoading(false);
+      return undefined;
+    }
+
+    let isCurrent = true;
+    const normalizedSearchQuery = searchQuery.trim();
+
+    setLoading(true);
+    setSearchError("");
+
+    const debounceTimer = window.setTimeout(async () => {
+      try {
+        if (!supabase) {
+          throw new Error(
+            "Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your local environment.",
+          );
+        }
+
+        let query = supabase.from("courses").select("*");
+
+        if (normalizedSearchQuery) {
+          query = query.or(
+            `name.ilike.%${normalizedSearchQuery}%,code.ilike.%${normalizedSearchQuery}%`,
+          );
+        }
+
+        const { data, error: coursesError } = await query.order("code", {
+          ascending: true,
+        });
+
+        if (coursesError) {
+          throw coursesError;
+        }
+
+        if (isCurrent) {
+          setCourses(data ?? []);
+        }
+      } catch (loadError) {
+        if (isCurrent) {
+          setCourses([]);
+          setSearchError(loadError.message || "Unable to search courses right now.");
+        }
+      } finally {
+        if (isCurrent) {
+          setLoading(false);
+        }
+      }
+    }, 300);
+
+    return () => {
+      isCurrent = false;
+      window.clearTimeout(debounceTimer);
+    };
+  }, [profile?.id, searchQuery]);
+
+  const displayedOfferings = useMemo(() => {
+    const normalizedSearchQuery = searchQuery.trim();
+
+    if (!normalizedSearchQuery && !courses.length) {
+      return offerings;
+    }
+
+    const matchingCourseIds = new Set(courses.map((course) => course.id));
+
+    return offerings.filter((course) => matchingCourseIds.has(course.courseId));
+  }, [courses, offerings, searchQuery]);
+
   const availableCourses = useMemo(
-    () => offerings.filter((course) => !course.registrationStatus),
-    [offerings],
+    () => displayedOfferings.filter((course) => !course.registrationStatus),
+    [displayedOfferings],
   );
   const selectedCourses = useMemo(
-    () => offerings.filter((course) => course.registrationStatus === "selected"),
-    [offerings],
+    () =>
+      displayedOfferings.filter(
+        (course) => course.registrationStatus === "selected",
+      ),
+    [displayedOfferings],
   );
   const registeredCourses = useMemo(
-    () => offerings.filter((course) => course.registrationStatus === "registered"),
-    [offerings],
+    () =>
+      displayedOfferings.filter(
+        (course) => course.registrationStatus === "registered",
+      ),
+    [displayedOfferings],
   );
   const coreCourses = availableCourses.filter((course) => course.courseType === "core");
   const electiveCourses = availableCourses.filter(
     (course) => course.courseType !== "core",
   );
+  const isLoading = offeringsLoading || loading;
 
   const runCourseAction = async (key, action, successMessage) => {
     setActionError("");
@@ -259,7 +342,16 @@ const StudentCourseRegistrationPage = () => {
             </Stack>
           </Paper>
 
-          {loading ? (
+          <TextField
+            fullWidth
+            label="Search courses"
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search by course name or code..."
+            value={searchQuery}
+            variant="outlined"
+          />
+
+          {isLoading ? (
             <Box
               sx={{
                 alignItems: "center",
@@ -272,7 +364,7 @@ const StudentCourseRegistrationPage = () => {
             </Box>
           ) : null}
 
-          {!loading && error ? (
+          {!isLoading && error ? (
             <Alert
               action={
                 <Button color="inherit" onClick={refresh} size="small">
@@ -286,19 +378,25 @@ const StudentCourseRegistrationPage = () => {
             </Alert>
           ) : null}
 
-          {!loading && actionError ? (
+          {!isLoading && searchError ? (
+            <Alert severity="error" variant="outlined">
+              {searchError}
+            </Alert>
+          ) : null}
+
+          {!isLoading && actionError ? (
             <Alert severity="error" variant="outlined">
               {actionError}
             </Alert>
           ) : null}
 
-          {!loading && actionMessage ? (
+          {!isLoading && actionMessage ? (
             <Alert severity="success" variant="outlined">
               {actionMessage}
             </Alert>
           ) : null}
 
-          {!loading && !error && !offerings.length ? (
+          {!isLoading && !error && !searchError && !displayedOfferings.length ? (
             <Paper
               elevation={0}
               sx={{
@@ -311,16 +409,17 @@ const StudentCourseRegistrationPage = () => {
               <Typography
                 sx={{ color: "text.primary", fontSize: "1.1rem", fontWeight: 700 }}
               >
-                No courses are currently available for your program.
+                No courses found
               </Typography>
               <Typography sx={{ color: "text.secondary", mt: 1 }}>
-                Once new offerings are published for your department and level,
-                they will appear here automatically.
+                {searchQuery.trim()
+                  ? "Try searching with a different course name or code."
+                  : "Once new offerings are published for your department and level, they will appear here automatically."}
               </Typography>
             </Paper>
           ) : null}
 
-          {!loading && !error && offerings.length ? (
+          {!isLoading && !error && !searchError && displayedOfferings.length ? (
             <Stack spacing={4}>
               <Stack spacing={2.5}>
                 <Stack
