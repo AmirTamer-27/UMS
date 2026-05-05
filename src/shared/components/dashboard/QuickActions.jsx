@@ -8,6 +8,7 @@ import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
 import LibraryBooksOutlinedIcon from "@mui/icons-material/LibraryBooksOutlined";
 import MessageOutlinedIcon from "@mui/icons-material/MessageOutlined";
 import PersonAddAltOutlinedIcon from "@mui/icons-material/PersonAddAltOutlined";
+import PersonSearchOutlinedIcon from "@mui/icons-material/PersonSearchOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 
 const actionIcons = {
@@ -20,6 +21,7 @@ const actionIcons = {
   "Create Student": PersonAddAltOutlinedIcon,
   "Update Student": EditOutlinedIcon,
   "Create Staff": SchoolOutlinedIcon,
+  "Find Professors": PersonSearchOutlinedIcon,
   "Send Message": MessageOutlinedIcon,
 };
 
@@ -29,6 +31,7 @@ const actionRoutes = {
   "Create Student": "/admin/student-records",
   "Update Student": "/admin/student-records",
   "Create Staff": "/admin/staff/create",
+  "Find Professors": "/student/professors",
 };
 
 const QuickActions = ({ actions, profile }) => {
