@@ -23,12 +23,15 @@ import {
 
 import AdminPanelSettingsOutlinedIcon from "@mui/icons-material/AdminPanelSettingsOutlined";
 import ApartmentOutlinedIcon from "@mui/icons-material/ApartmentOutlined";
+import BuildOutlinedIcon from "@mui/icons-material/BuildOutlined";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
+import GradingOutlinedIcon from "@mui/icons-material/GradingOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import MessageOutlinedIcon from "@mui/icons-material/MessageOutlined";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
 import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
+import QuizOutlinedIcon from "@mui/icons-material/QuizOutlined";
 
 import { useAuth } from "../../../context/AuthContext";
 import { supabase } from "../../../services/supabase/client";
@@ -46,6 +49,30 @@ const adminNavigationItems = [
   { label: "Students", path: "/admin/student-records", icon: PeopleAltOutlinedIcon },
   { label: "Course Offerings", path: "/admin/course-offerings", icon: AdminPanelSettingsOutlinedIcon },
 ];
+
+const createQuizNavigationItem = {
+  label: "Create Quiz",
+  path: "/lms/quizzes/create",
+  icon: QuizOutlinedIcon,
+};
+
+const attemptQuizNavigationItem = {
+  label: "Attempt Quiz",
+  path: "/lms/quizzes/attempt",
+  icon: QuizOutlinedIcon,
+};
+
+const gradesNavigationItem = {
+  label: "Grades",
+  path: "/grades/review-submissions",
+  icon: GradingOutlinedIcon,
+};
+
+const maintenanceNavigationItem = {
+  label: "Maintenance",
+  path: "/facilities/maintenance-report",
+  icon: BuildOutlinedIcon,
+};
 
 const roleAliases = {
   teacher: "instructor",
@@ -119,9 +146,30 @@ const MainLayout = ({ children, profile }) => {
     const [dashboard, courses, rooms, messages] = baseNavigation;
 
     const navigationByRole = {
-      admin: [dashboard, ...adminNavigationItems, messages],
-      student: [dashboard, courses, messages],
-      instructor: [dashboard, rooms, messages],
+      admin: [
+        dashboard,
+        ...adminNavigationItems,
+        rooms,
+        createQuizNavigationItem,
+        gradesNavigationItem,
+        maintenanceNavigationItem,
+        messages,
+      ],
+      student: [
+        dashboard,
+        courses,
+        rooms,
+        attemptQuizNavigationItem,
+        maintenanceNavigationItem,
+        messages,
+      ],
+      instructor: [
+        dashboard,
+        rooms,
+        createQuizNavigationItem,
+        gradesNavigationItem,
+        messages,
+      ],
       parent: [dashboard, messages],
     };
 
