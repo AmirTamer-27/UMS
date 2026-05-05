@@ -139,23 +139,31 @@ const EditStaffProfile = () => {
         throw profileError;
       }
 
-      const { error: staffProfileError } = await supabase
+      const { data: updatedStaffProfile, error: staffProfileError } = await supabase
         .from("staff_profiles")
         .update({
           bio: nextBio,
           office_hours: nextOfficeHours,
           title: nextTitle,
         })
-        .eq("user_id", user.id);
+        .eq("user_id", user.id)
+        .select("bio, office_hours, title")
+        .maybeSingle();
 
       if (staffProfileError) {
         throw staffProfileError;
       }
 
+      if (!updatedStaffProfile) {
+        throw new Error(
+          "No staff profile row was updated. Please ask an administrator to create your staff profile.",
+        );
+      }
+
       setEmail(nextEmail);
-      setOfficeHours(nextOfficeHours);
-      setTitle(nextTitle);
-      setBio(nextBio);
+      setOfficeHours(updatedStaffProfile.office_hours || "");
+      setTitle(updatedStaffProfile.title || "");
+      setBio(updatedStaffProfile.bio || "");
       await refreshProfile();
       setFeedback({
         message: "Profile updated successfully.",
