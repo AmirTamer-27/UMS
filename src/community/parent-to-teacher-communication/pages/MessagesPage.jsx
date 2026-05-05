@@ -3,6 +3,33 @@ import { Box, Typography, Paper, Divider } from "@mui/material";
 import { supabase } from "../../../services/supabase";
 import { useAuth } from "../../../context/AuthContext";
 
+const getProfileName = (profile, fallback = "User") =>
+  profile?.full_name || profile?.email || fallback;
+
+const getReceiverId = (message, conversation) => {
+  if (!conversation) {
+    return null;
+  }
+
+  if (message.sender_user_id === conversation.teacher_user_id) {
+    return conversation.parent_user_id || conversation.student_user_id;
+  }
+
+  if (message.sender_user_id === conversation.parent_user_id) {
+    return conversation.teacher_user_id;
+  }
+
+  if (message.sender_user_id === conversation.student_user_id) {
+    return conversation.teacher_user_id || conversation.parent_user_id;
+  }
+
+  return [
+    conversation.teacher_user_id,
+    conversation.parent_user_id,
+    conversation.student_user_id,
+  ].find((participantId) => participantId && participantId !== message.sender_user_id);
+};
+
 const MessagesPage = () => {
   const { user } = useAuth();
   const [messages, setMessages] = useState([]);
@@ -19,10 +46,15 @@ const MessagesPage = () => {
         .from("conversations")
         .select("*")
         .or(
-          `teacher_user_id.eq.${currentUser.id},parent_user_id.eq.${currentUser.id}`
+          `teacher_user_id.eq.${currentUser.id},parent_user_id.eq.${currentUser.id},student_user_id.eq.${currentUser.id}`,
         );
 
-      if (!conversations || conversations.length === 0) return;
+      if (!conversations || conversations.length === 0) {
+        setMessages([]);
+        setProfilesMap({});
+        setConversationsMap({});
+        return;
+      }
 
       const convIds = conversations.map((c) => c.id);
 
@@ -47,12 +79,20 @@ const MessagesPage = () => {
       conversations.forEach((c) => {
         ids.add(c.teacher_user_id);
         ids.add(c.parent_user_id);
+        ids.add(c.student_user_id);
       });
+
+      const profileIds = Array.from(ids).filter(Boolean);
+
+      if (!profileIds.length) {
+        setProfilesMap({});
+        return;
+      }
 
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, full_name, role")
-        .in("id", Array.from(ids));
+        .select("id, full_name, email, role")
+        .in("id", profileIds);
 
       const map = {};
       profiles?.forEach((p) => {
@@ -82,23 +122,23 @@ const MessagesPage = () => {
           <Typography p={2}>No messages yet</Typography>
         ) : (
           messages.map((msg, index) => {
-            const isMe = msg.sender_user_id === user?.id;
             const conv = conversationsMap[msg.conversation_id];
-
-            let label = "User";
-
-            if (isMe) {
-              const receiverId =
-                conv?.teacher_user_id === user?.id
-                  ? conv?.parent_user_id
-                  : conv?.teacher_user_id;
-
-              const receiver = profilesMap[receiverId];
-              label = `Sent to ${receiver?.full_name || "User"}`;
-            } else {
-              const sender = profilesMap[msg.sender_user_id];
-              label = `${sender?.full_name || "User"} → You`;
-            }
+            const receiverId = getReceiverId(msg, conv);
+            const sender = profilesMap[msg.sender_user_id];
+            const receiver = profilesMap[receiverId];
+            const isSender = msg.sender_user_id === user?.id;
+            const isReceiver = receiverId === user?.id;
+            const senderName = getProfileName(
+              sender,
+              isSender ? "You" : "User",
+            );
+            const receiverName = getProfileName(
+              receiver,
+              isReceiver ? "You" : "User",
+            );
+            const label = `From ${isSender ? "You" : senderName} to ${
+              isReceiver ? "You" : receiverName
+            }`;
 
             return (
               <Box key={msg.id}>
@@ -112,7 +152,6 @@ const MessagesPage = () => {
                     },
                   }}
                 >
-                  {/* Top Row */}
                   <Box
                     sx={{
                       display: "flex",
@@ -133,7 +172,6 @@ const MessagesPage = () => {
                     </Typography>
                   </Box>
 
-                  {/* Message */}
                   <Typography
                     variant="body2"
                     sx={{

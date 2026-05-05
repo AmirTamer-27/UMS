@@ -24,6 +24,7 @@ import {
 import AdminPanelSettingsOutlinedIcon from "@mui/icons-material/AdminPanelSettingsOutlined";
 import ApartmentOutlinedIcon from "@mui/icons-material/ApartmentOutlined";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import MessageOutlinedIcon from "@mui/icons-material/MessageOutlined";
@@ -118,6 +119,7 @@ const MainLayout = ({ children, profile }) => {
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState(null);
   const canShowNotifications = notificationRoles.has(navigationRole);
+  const canEditStaffProfile = role === "teacher" || role === "staff";
   const isNotificationMenuOpen = Boolean(notificationAnchorEl);
 
   const initials = displayName
@@ -239,18 +241,6 @@ const MainLayout = ({ children, profile }) => {
     setNotificationAnchorEl(null);
   };
 
-  const getMessagesPath = () => {
-    if (navigationRole === "parent") {
-      return "/parent/messages";
-    }
-
-    if (navigationRole === "instructor") {
-      return "/teacher/messages";
-    }
-
-    return "/messages";
-  };
-
   const handleNotificationClick = async (notification) => {
     handleCloseNotifications();
 
@@ -283,8 +273,8 @@ const MainLayout = ({ children, profile }) => {
       }
     }
 
-    if (notification.message_id) {
-      navigate(getMessagesPath());
+    if (notification.type === "message" || notification.message_id) {
+      navigate("/messages");
     }
   };
 
@@ -326,6 +316,20 @@ const MainLayout = ({ children, profile }) => {
           </Box>
 
           <Stack alignItems="center" direction="row" spacing={1.5}>
+            {canEditStaffProfile ? (
+              <IconButton
+                aria-label="Edit profile"
+                color="primary"
+                onClick={() => navigate("/staff/profile/edit")}
+                sx={{
+                  borderRadius: 1,
+                  height: 40,
+                  width: 40,
+                }}
+              >
+                <EditOutlinedIcon fontSize="small" />
+              </IconButton>
+            ) : null}
             {canShowNotifications ? (
               <>
                 <IconButton
