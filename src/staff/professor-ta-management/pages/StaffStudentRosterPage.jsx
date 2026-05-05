@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Box,
@@ -14,81 +14,55 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import BadgeOutlinedIcon from "@mui/icons-material/BadgeOutlined";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
+import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import MessageOutlinedIcon from "@mui/icons-material/MessageOutlined";
 import PersonSearchOutlinedIcon from "@mui/icons-material/PersonSearchOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import { useNavigate } from "react-router-dom";
 
-import {
-  fetchDepartments,
-  fetchProfessorDirectory,
-} from "../services";
+import { useAuth } from "../../../context/AuthContext";
+import { fetchInstructorStudentRoster } from "../services";
 
-const ProfessorDirectoryPage = () => {
+const getStudentProfile = (student) =>
+  Array.isArray(student.student_profiles)
+    ? student.student_profiles[0]
+    : student.student_profiles;
+
+const StaffStudentRosterPage = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const [departments, setDepartments] = useState([]);
   const [departmentId, setDepartmentId] = useState("");
+  const [departments, setDepartments] = useState([]);
   const [errorMessage, setErrorMessage] = useState("");
-  const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [page, setPage] = useState(0);
-  const [professors, setProfessors] = useState([]);
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [total, setTotal] = useState(0);
+  const [students, setStudents] = useState([]);
+  const [totalCourses, setTotalCourses] = useState(0);
 
   useEffect(() => {
     let mounted = true;
 
-    const loadDepartments = async () => {
-      try {
-        const nextDepartments = await fetchDepartments();
-
-        if (mounted) {
-          setDepartments(nextDepartments);
-        }
-      } catch (error) {
-        if (mounted) {
-          setErrorMessage(error.message || "Unable to load departments.");
-        }
-      }
-    };
-
-    loadDepartments();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let mounted = true;
-
-    const loadProfessors = async () => {
+    const loadRoster = async () => {
       setLoading(true);
       setErrorMessage("");
 
       try {
-        const result = await fetchProfessorDirectory({
-          departmentId,
-          page: 0,
-          search: searchQuery,
-        });
+        const result = await fetchInstructorStudentRoster(user?.id);
 
         if (mounted) {
-          setProfessors(result.professors);
-          setHasMore(result.hasMore);
-          setTotal(result.total);
-          setPage(0);
+          setDepartments(result.departments);
+          setStudents(result.students);
+          setTotalCourses(result.courseOfferings.length);
         }
       } catch (error) {
         if (mounted) {
-          setErrorMessage(error.message || "Unable to load professors.");
-          setProfessors([]);
-          setHasMore(false);
-          setTotal(0);
+          setDepartments([]);
+          setStudents([]);
+          setTotalCourses(0);
+          setErrorMessage(error.message || "Unable to load student roster.");
         }
       } finally {
         if (mounted) {
@@ -97,12 +71,28 @@ const ProfessorDirectoryPage = () => {
       }
     };
 
-    loadProfessors();
+    loadRoster();
 
     return () => {
       mounted = false;
     };
-  }, [departmentId, searchQuery]);
+  }, [user?.id]);
+
+  const filteredStudents = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    return students.filter((student) => {
+      const studentProfile = getStudentProfile(student);
+      const matchesDepartment =
+        !departmentId || student.department_id === departmentId;
+      const matchesSearch =
+        !query ||
+        (student.full_name || "").toLowerCase().includes(query) ||
+        (studentProfile?.student_number || "").toLowerCase().includes(query);
+
+      return matchesDepartment && matchesSearch;
+    });
+  }, [departmentId, searchQuery, students]);
 
   const handleSearch = (event) => {
     event.preventDefault();
@@ -115,42 +105,16 @@ const ProfessorDirectoryPage = () => {
     setSearchQuery("");
   };
 
-  const handleViewMore = async () => {
-    const nextPage = page + 1;
-    setLoadingMore(true);
-    setErrorMessage("");
-
-    try {
-      const result = await fetchProfessorDirectory({
-        departmentId,
-        page: nextPage,
-        search: searchQuery,
-      });
-
-      setProfessors((currentProfessors) => [
-        ...currentProfessors,
-        ...result.professors,
-      ]);
-      setHasMore(result.hasMore);
-      setTotal(result.total);
-      setPage(nextPage);
-    } catch (error) {
-      setErrorMessage(error.message || "Unable to load more professors.");
-    } finally {
-      setLoadingMore(false);
-    }
-  };
-
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default", py: 4 }}>
       <Container maxWidth="lg">
         <Stack spacing={3}>
           <Box>
             <Typography component="h1" fontWeight={900} variant="h4">
-              Professor Directory
+              Student Roster
             </Typography>
             <Typography color="text.secondary">
-              Find professor details by name or department.
+              View students registered in your assigned course offerings.
             </Typography>
           </Box>
 
@@ -164,7 +128,7 @@ const ProfessorDirectoryPage = () => {
               >
                 <TextField
                   fullWidth
-                  label="Search by professor name"
+                  label="Search by student name or ID"
                   onChange={(event) => setSearchInput(event.target.value)}
                   value={searchInput}
                 />
@@ -207,7 +171,12 @@ const ProfessorDirectoryPage = () => {
             spacing={1}
           >
             <Typography color="text.secondary" variant="body2">
-              {loading ? "Loading matching profiles..." : `${total} matching profiles`}
+              {loading
+                ? "Loading registered students..."
+                : `${filteredStudents.length} of ${students.length} students shown`}
+            </Typography>
+            <Typography color="text.secondary" variant="body2">
+              {totalCourses} assigned course offerings
             </Typography>
           </Stack>
 
@@ -215,25 +184,33 @@ const ProfessorDirectoryPage = () => {
             <Stack alignItems="center" sx={{ py: 8 }}>
               <CircularProgress />
             </Stack>
-          ) : professors.length === 0 ? (
+          ) : students.length === 0 ? (
             <Card>
               <CardContent sx={{ p: 3 }}>
-                <Typography fontWeight={700}>No professors found.</Typography>
+                <Typography fontWeight={700}>No registered students found.</Typography>
                 <Typography color="text.secondary" variant="body2">
-                  Try a different name or department.
+                  Students will appear here after they register for your assigned
+                  course offerings.
+                </Typography>
+              </CardContent>
+            </Card>
+          ) : filteredStudents.length === 0 ? (
+            <Card>
+              <CardContent sx={{ p: 3 }}>
+                <Typography fontWeight={700}>No students match these filters.</Typography>
+                <Typography color="text.secondary" variant="body2">
+                  Try a different name, student ID, or department.
                 </Typography>
               </CardContent>
             </Card>
           ) : (
             <Grid container spacing={2.5}>
-              {professors.map((professor) => {
-                const staffProfile = Array.isArray(professor.staff_profiles)
-                  ? professor.staff_profiles[0]
-                  : professor.staff_profiles;
-                const department = professor.departments;
+              {filteredStudents.map((student) => {
+                const studentProfile = getStudentProfile(student);
+                const department = student.departments;
 
                 return (
-                  <Grid item key={professor.id} xs={12} md={6}>
+                  <Grid item key={student.id} xs={12} md={6}>
                     <Card sx={{ height: "100%" }}>
                       <CardContent sx={{ p: 3 }}>
                         <Stack spacing={2}>
@@ -245,10 +222,10 @@ const ProfessorDirectoryPage = () => {
                           >
                             <Box>
                               <Typography fontWeight={900} variant="h6">
-                                {professor.full_name || "Unnamed professor"}
+                                {student.full_name || "Unnamed student"}
                               </Typography>
                               <Typography color="text.secondary" variant="body2">
-                                {staffProfile?.title || "Academic staff"}
+                                {studentProfile?.student_number || "Student ID unavailable"}
                               </Typography>
                             </Box>
                             {department ? (
@@ -265,27 +242,46 @@ const ProfessorDirectoryPage = () => {
                             <Stack alignItems="center" direction="row" spacing={1}>
                               <EmailOutlinedIcon color="primary" fontSize="small" />
                               <Typography variant="body2">
-                                {professor.email || "Email unavailable"}
+                                {student.email || "Email unavailable"}
+                              </Typography>
+                            </Stack>
+                            <Stack alignItems="center" direction="row" spacing={1}>
+                              <BadgeOutlinedIcon color="primary" fontSize="small" />
+                              <Typography variant="body2">
+                                Level: {studentProfile?.level || "Not listed"}
                               </Typography>
                             </Stack>
                             <Stack alignItems="center" direction="row" spacing={1}>
                               <SchoolOutlinedIcon color="primary" fontSize="small" />
                               <Typography variant="body2">
-                                Office hours: {staffProfile?.office_hours || "Not listed"}
+                                Status: {studentProfile?.status || "Not listed"}
                               </Typography>
                             </Stack>
                           </Stack>
 
-                          {staffProfile?.bio ? (
-                            <Typography color="text.secondary" variant="body2">
-                              {staffProfile.bio}
-                            </Typography>
-                          ) : null}
+                          <Stack spacing={1}>
+                            <Stack alignItems="center" direction="row" spacing={1}>
+                              <MenuBookOutlinedIcon color="primary" fontSize="small" />
+                              <Typography fontWeight={800} variant="body2">
+                                Registered courses
+                              </Typography>
+                            </Stack>
+                            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                              {student.enrolledCourses.map((course) => (
+                                <Chip
+                                  key={course.id}
+                                  label={course.label}
+                                  size="small"
+                                  sx={{ borderRadius: 1 }}
+                                />
+                              ))}
+                            </Stack>
+                          </Stack>
 
                           <Stack alignItems="flex-start">
                             <Button
                               onClick={() =>
-                                navigate(`/student-staff/messages?staffId=${professor.id}`)
+                                navigate(`/student-staff/messages?studentId=${student.id}`)
                               }
                               startIcon={<MessageOutlinedIcon />}
                               variant="outlined"
@@ -301,22 +297,10 @@ const ProfessorDirectoryPage = () => {
               })}
             </Grid>
           )}
-
-          {hasMore ? (
-            <Stack alignItems="center">
-              <Button
-                disabled={loadingMore}
-                onClick={handleViewMore}
-                variant="outlined"
-              >
-                {loadingMore ? "Loading..." : "View More"}
-              </Button>
-            </Stack>
-          ) : null}
         </Stack>
       </Container>
     </Box>
   );
 };
 
-export default ProfessorDirectoryPage;
+export default StaffStudentRosterPage;
