@@ -23,9 +23,13 @@ import {
   StudentStaffMessagesPage,
 } from "../../community/student-to-staff-communication/pages";
 import ClassroomsPage from "../../facilities/classroom-laboratory-management/pages/ClassroomsPage";
+import MaintenanceReportPage from "../../facilities/classroom-laboratory-management/pages/MaintenanceReportPage";
 import StudentRecordsPage from "../../facilities/administrative-office-automation/pages/StudentRecordsPage";
 import AssignmentDetailPage from "../../modules/lms/pages/AssignmentDetailPage";
 import CourseOfferingPage from "../../modules/lms/pages/CourseOfferingPage";
+import CreateQuizPage from "../../modules/lms/pages/CreateQuizPage";
+import AttemptQuizPage from "../../modules/lms/pages/AttemptQuizPage";
+import ReviewSubmissionsPage from "../../modules/grades/pages/ReviewSubmissionsPage";
 import ApplicationFormPage from "../../modules/admissions/pages/ApplicationFormPage";
 import AdminApplicationsPage from "../../modules/admissions/pages/AdminApplicationsPage";
 import ParentStudentProgressPage from "../../modules/lms/pages/ParentStudentProgressPage";
@@ -65,6 +69,15 @@ const AppRouter = () => (
       <Route
         element={
           <ProtectedRoute>
+            <MaintenanceReportPage />
+          </ProtectedRoute>
+        }
+        path="/facilities/maintenance-report"
+      />
+
+      <Route
+        element={
+          <ProtectedRoute>
             <AdminCourseOfferingPage />
           </ProtectedRoute>
         }
@@ -79,6 +92,7 @@ const AppRouter = () => (
         }
         path="/admin/student-records"
       />
+
       <Route
         element={
           <ProtectedRoute>
@@ -87,6 +101,7 @@ const AppRouter = () => (
         }
         path="/staff/profile"
       />
+
       <Route
         element={
           <ProtectedRoute>
@@ -104,8 +119,6 @@ const AppRouter = () => (
         }
         path="/staff/students"
       />
-
-
 
       <Route
         element={
@@ -179,7 +192,33 @@ const AppRouter = () => (
         path="/lms/courses/:courseOfferingId/assignments/:assignmentId"
       />
 
-      {/* Public admission application (no auth required) */}
+      <Route
+        element={
+          <ProtectedRoute>
+            <CreateQuizPage />
+          </ProtectedRoute>
+        }
+        path="/lms/quizzes/create"
+      />
+
+      <Route
+        element={
+          <ProtectedRoute>
+            <AttemptQuizPage />
+          </ProtectedRoute>
+        }
+        path="/lms/quizzes/attempt"
+      />
+
+      <Route
+        element={
+          <ProtectedRoute>
+            <ReviewSubmissionsPage />
+          </ProtectedRoute>
+        }
+        path="/grades/review-submissions"
+      />
+
       <Route element={<ApplicationFormPage />} path="/admissions/apply" />
 
       <Route
