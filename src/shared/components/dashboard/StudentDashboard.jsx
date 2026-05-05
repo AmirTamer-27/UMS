@@ -93,6 +93,7 @@ const StudentDashboard = ({ data, loading }) => {
       <QuickActions
         actions={[
           { label: "Browse Courses", onClick: () => navigate("/courses/registration") },
+          { label: "Find Professors", to: "/student/professors", color: "secondary" },
           { label: "My Registrations", color: "secondary", variant: "outlined" },
           {
             label: "Submit Assignment",
