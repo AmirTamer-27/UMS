@@ -17,6 +17,7 @@ import {
 import TeacherMessagesPage from "../../community/parent-to-teacher-communication/pages/TeacherMessagesPage";
 import MessagesPage from "../../community/parent-to-teacher-communication/pages/MessagesPage";
 import ParentMessagesPage from "../../community/parent-to-teacher-communication/pages/ParentMessagesPage";
+import { ProfessorDirectoryPage } from "../../community/student-to-staff-communication/pages";
 import ClassroomsPage from "../../facilities/classroom-laboratory-management/pages/ClassroomsPage";
 import StudentRecordsPage from "../../facilities/administrative-office-automation/pages/StudentRecordsPage";
 import AssignmentDetailPage from "../../modules/lms/pages/AssignmentDetailPage";
@@ -115,6 +116,15 @@ const AppRouter = () => (
             <ParentMessagesPage />
           </ProtectedRoute>
         }
+      />
+
+      <Route
+        element={
+          <ProtectedRoute>
+            <ProfessorDirectoryPage />
+          </ProtectedRoute>
+        }
+        path="/student/professors"
       />
 
       <Route
