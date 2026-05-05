@@ -13,10 +13,15 @@ import AdminCourseOfferingPage from "../../modules/curriculum/course-registratio
 import {
   AdminCreateStaffPage,
   StaffProfilePage,
+  StaffStudentRosterPage,
 } from "../../staff/professor-ta-management/pages";
 import TeacherMessagesPage from "../../community/parent-to-teacher-communication/pages/TeacherMessagesPage";
 import MessagesPage from "../../community/parent-to-teacher-communication/pages/MessagesPage";
 import ParentMessagesPage from "../../community/parent-to-teacher-communication/pages/ParentMessagesPage";
+import {
+  ProfessorDirectoryPage,
+  StudentStaffMessagesPage,
+} from "../../community/student-to-staff-communication/pages";
 import ClassroomsPage from "../../facilities/classroom-laboratory-management/pages/ClassroomsPage";
 import StudentRecordsPage from "../../facilities/administrative-office-automation/pages/StudentRecordsPage";
 import AssignmentDetailPage from "../../modules/lms/pages/AssignmentDetailPage";
@@ -90,6 +95,15 @@ const AppRouter = () => (
         path="/admin/staff/create"
       />
 
+      <Route
+        element={
+          <ProtectedRoute>
+            <StaffStudentRosterPage />
+          </ProtectedRoute>
+        }
+        path="/staff/students"
+      />
+
 
 
       <Route
@@ -117,6 +131,24 @@ const AppRouter = () => (
             <ParentMessagesPage />
           </ProtectedRoute>
         }
+      />
+
+      <Route
+        element={
+          <ProtectedRoute>
+            <ProfessorDirectoryPage />
+          </ProtectedRoute>
+        }
+        path="/student/professors"
+      />
+
+      <Route
+        element={
+          <ProtectedRoute>
+            <StudentStaffMessagesPage />
+          </ProtectedRoute>
+        }
+        path="/student-staff/messages"
       />
 
       <Route
