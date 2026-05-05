@@ -23,6 +23,7 @@ import AssignmentDetailPage from "../../modules/lms/pages/AssignmentDetailPage";
 import CourseOfferingPage from "../../modules/lms/pages/CourseOfferingPage";
 import ApplicationFormPage from "../../modules/admissions/pages/ApplicationFormPage";
 import AdminApplicationsPage from "../../modules/admissions/pages/AdminApplicationsPage";
+import ParentStudentProgressPage from "../../modules/lms/pages/ParentStudentProgressPage";
 
 const AppRouter = () => (
   <Router future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
@@ -115,6 +116,15 @@ const AppRouter = () => (
         element={
           <ProtectedRoute>
             <ParentMessagesPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/parent/progress"
+        element={
+          <ProtectedRoute>
+            <ParentStudentProgressPage />
           </ProtectedRoute>
         }
       />

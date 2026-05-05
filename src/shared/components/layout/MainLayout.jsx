@@ -29,6 +29,7 @@ import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import MessageOutlinedIcon from "@mui/icons-material/MessageOutlined";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
 import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
+import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
 
 import { useAuth } from "../../../context/AuthContext";
 import { supabase } from "../../../services/supabase/client";
@@ -122,7 +123,7 @@ const MainLayout = ({ children, profile }) => {
       admin: [dashboard, ...adminNavigationItems, messages],
       student: [dashboard, courses, messages],
       instructor: [dashboard, rooms, messages],
-      parent: [dashboard, messages],
+      parent: [dashboard, { label: "Academic Progress", path: "/parent/progress", icon: TrendingUpOutlinedIcon }, messages],
     };
 
     return navigationByRole[navigationRole] || navigationByRole.student;
