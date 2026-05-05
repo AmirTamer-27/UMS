@@ -95,6 +95,18 @@ const getRelativeTime = (dateValue) => {
   }).format(new Date(dateValue));
 };
 
+const getNotificationBody = (notification) => {
+  const body = notification.body || "You have a new message.";
+  const courseName = notification.course_offerings?.courses?.name;
+
+  if (notification.type === "material" && courseName) {
+    const materialBody = body.replace(/^New Material:\s*/i, "");
+    return `New material in ${courseName}: ${materialBody}`;
+  }
+
+  return body;
+};
+
 const MainLayout = ({ children, profile }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -145,7 +157,15 @@ const MainLayout = ({ children, profile }) => {
     try {
       const { data, error } = await supabase
         .from("notifications")
-        .select("*")
+        .select(`
+          *,
+          course_offerings (
+            id,
+            courses (
+              name
+            )
+          )
+        `)
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
@@ -414,7 +434,7 @@ const MainLayout = ({ children, profile }) => {
                               }}
                               variant="body2"
                             >
-                              {notification.body || "You have a new message."}
+                              {getNotificationBody(notification)}
                             </Typography>
                             <Typography
                               color="text.secondary"
