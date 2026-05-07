@@ -32,6 +32,7 @@ import MessageOutlinedIcon from "@mui/icons-material/MessageOutlined";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
 import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
 import QuizOutlinedIcon from "@mui/icons-material/QuizOutlined";
+import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
 
 import { useAuth } from "../../../context/AuthContext";
 import { supabase } from "../../../services/supabase/client";
@@ -66,6 +67,12 @@ const gradesNavigationItem = {
   label: "Grades",
   path: "/grades/review-submissions",
   icon: GradingOutlinedIcon,
+};
+
+const academicProgressNavigationItem = {
+  label: "Academic Progress",
+  path: "/parent/progress",
+  icon: TrendingUpOutlinedIcon,
 };
 
 const maintenanceNavigationItem = {
@@ -170,7 +177,7 @@ const MainLayout = ({ children, profile }) => {
         gradesNavigationItem,
         messages,
       ],
-      parent: [dashboard, messages],
+      parent: [dashboard, academicProgressNavigationItem, messages],
     };
 
     return navigationByRole[navigationRole] || navigationByRole.student;
