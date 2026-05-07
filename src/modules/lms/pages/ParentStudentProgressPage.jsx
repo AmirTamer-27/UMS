@@ -22,6 +22,9 @@ import {
 import { supabase } from "../../../services/supabase/client";
 import { useAuth } from "../../../context/AuthContext";
 
+const getGradeLabel = (grade) =>
+  grade === null || grade === undefined || grade === "" ? "Not graded" : grade;
+
 const formatDueDate = (dateValue) => {
   if (!dateValue) {
     return "No Due Date";
@@ -47,7 +50,11 @@ const ParentStudentProgressPage = () => {
   const [loading, setLoading] = useState(true);
   const [linkedStudents, setLinkedStudents] = useState([]);
   const [selectedStudentId, setSelectedStudentId] = useState("");
-  const [progressData, setProgressData] = useState({ courses: [], assignments: [] });
+  const [progressData, setProgressData] = useState({
+    courses: [],
+    assignments: [],
+    quizzes: [],
+  });
 
   useEffect(() => {
     const fetchLinkedStudents = async () => {
@@ -124,7 +131,7 @@ const ParentStudentProgressPage = () => {
           // 3. Fetch student's submissions
           const { data: submissions, error: subError } = await supabase
             .from("assignment_submissions")
-            .select("assignment_id, submitted_at, is_late")
+            .select("assignment_id, submitted_at, is_late, grade")
             .eq("student_user_id", selectedStudentId);
 
           if (subError) throw subError;
@@ -156,12 +163,55 @@ const ParentStudentProgressPage = () => {
               dueDate: assign.due_date,
               status,
               color,
-              submittedAt: submission ? submission.submitted_at : null
+              submittedAt: submission ? submission.submitted_at : null,
+              grade: submission?.grade ?? null,
             };
           }).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
         }
 
-        setProgressData({ courses, assignments: assignmentsList });
+        let quizzesList = [];
+
+        if (offeringIds.length > 0) {
+          const { data: quizzes, error: quizzesError } = await supabase
+            .from("quizzes")
+            .select(`
+              id,
+              title,
+              course_offering_id,
+              course_offerings (
+                courses (name)
+              )
+            `)
+            .eq("is_published", true)
+            .in("course_offering_id", offeringIds);
+
+          if (quizzesError) throw quizzesError;
+
+          const { data: quizAttempts, error: quizAttemptsError } = await supabase
+            .from("quiz_attempts")
+            .select("quiz_id, submitted_at, grade")
+            .eq("student_user_id", selectedStudentId)
+            .in("quiz_id", (quizzes || []).map((quiz) => quiz.id));
+
+          if (quizAttemptsError) throw quizAttemptsError;
+
+          const attemptMap = {};
+          (quizAttempts || []).forEach((attempt) => {
+            attemptMap[attempt.quiz_id] = attempt;
+          });
+
+          quizzesList = (quizzes || []).map((quiz) => ({
+            id: quiz.id,
+            courseName: quiz.course_offerings?.courses?.name || "-",
+            title: quiz.title || "Quiz",
+            submittedAt: attemptMap[quiz.id]?.submitted_at || null,
+            grade: attemptMap[quiz.id]?.grade ?? null,
+            status: attemptMap[quiz.id] ? "Submitted" : "Not attempted",
+            color: attemptMap[quiz.id] ? "success" : "default",
+          }));
+        }
+
+        setProgressData({ courses, assignments: assignmentsList, quizzes: quizzesList });
 
       } catch (err) {
         console.error("Error fetching student progress:", err);
@@ -244,7 +294,7 @@ const ParentStudentProgressPage = () => {
               <Card elevation={2}>
                 <CardContent>
                   <Typography variant="h6" fontWeight={700} gutterBottom>
-                    Assignments Status
+                    Assignment Progress
                   </Typography>
                   {progressData.assignments.length > 0 ? (
                     <TableContainer component={Paper} variant="outlined">
@@ -255,6 +305,7 @@ const ParentStudentProgressPage = () => {
                             <TableCell sx={{ fontWeight: 700 }}>Assignment</TableCell>
                             <TableCell sx={{ fontWeight: 700 }}>Due Date</TableCell>
                             <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                            <TableCell sx={{ fontWeight: 700 }}>Grade</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
@@ -272,6 +323,7 @@ const ParentStudentProgressPage = () => {
                                   size="small"
                                 />
                               </TableCell>
+                              <TableCell>{getGradeLabel(assignment.grade)}</TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
@@ -279,6 +331,52 @@ const ParentStudentProgressPage = () => {
                     </TableContainer>
                   ) : (
                     <Typography color="text.secondary">No assignments found for the current courses.</Typography>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card elevation={2}>
+                <CardContent>
+                  <Typography variant="h6" fontWeight={700} gutterBottom>
+                    Quiz Progress
+                  </Typography>
+                  {progressData.quizzes.length > 0 ? (
+                    <TableContainer component={Paper} variant="outlined">
+                      <Table>
+                        <TableHead sx={{ bgcolor: "background.default" }}>
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: 700 }}>Course</TableCell>
+                            <TableCell sx={{ fontWeight: 700 }}>Quiz</TableCell>
+                            <TableCell sx={{ fontWeight: 700 }}>Submitted</TableCell>
+                            <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                            <TableCell sx={{ fontWeight: 700 }}>Grade</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {progressData.quizzes.map((quiz) => (
+                            <TableRow key={quiz.id}>
+                              <TableCell>{quiz.courseName}</TableCell>
+                              <TableCell>{quiz.title}</TableCell>
+                              <TableCell>
+                                {quiz.submittedAt ? formatDueDate(quiz.submittedAt) : "-"}
+                              </TableCell>
+                              <TableCell>
+                                <Chip
+                                  label={quiz.status}
+                                  color={quiz.color}
+                                  size="small"
+                                />
+                              </TableCell>
+                              <TableCell>{getGradeLabel(quiz.grade)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  ) : (
+                    <Typography color="text.secondary">
+                      No quiz attempts found for the current courses.
+                    </Typography>
                   )}
                 </CardContent>
               </Card>

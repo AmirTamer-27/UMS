@@ -232,11 +232,13 @@ export const sendStudentStaffMessage = async ({
     conversationId = conversation.id;
   }
 
-  const { error: messageError } = await supabase.from("messages").insert({
-    conversation_id: conversationId,
-    message_body: body,
-    sender_user_id: senderUserId,
-  });
+  const { error: messageError } = await supabase
+    .from("messages")
+    .insert({
+      conversation_id: conversationId,
+      message_body: body,
+      sender_user_id: senderUserId,
+    });
 
   if (messageError) {
     throw messageError;

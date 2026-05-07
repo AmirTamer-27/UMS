@@ -8,6 +8,7 @@ import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
 import LibraryBooksOutlinedIcon from "@mui/icons-material/LibraryBooksOutlined";
 import MessageOutlinedIcon from "@mui/icons-material/MessageOutlined";
 import PersonAddAltOutlinedIcon from "@mui/icons-material/PersonAddAltOutlined";
+import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 import PersonSearchOutlinedIcon from "@mui/icons-material/PersonSearchOutlined";
 import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
@@ -23,6 +24,7 @@ const actionIcons = {
   "Update Student": EditOutlinedIcon,
   "Create Staff": SchoolOutlinedIcon,
   "Find Professors": PersonSearchOutlinedIcon,
+  "Staff Profile": PersonOutlineOutlinedIcon,
   "Student Roster": PeopleAltOutlinedIcon,
   "Send Message": MessageOutlinedIcon,
 };
@@ -34,6 +36,7 @@ const actionRoutes = {
   "Update Student": "/admin/student-records",
   "Create Staff": "/admin/staff/create",
   "Find Professors": "/student/professors",
+  "Staff Profile": "/staff/profile",
   "Student Roster": "/staff/students",
 };
 

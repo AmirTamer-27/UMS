@@ -25,13 +25,12 @@ import AdminPanelSettingsOutlinedIcon from "@mui/icons-material/AdminPanelSettin
 import ApartmentOutlinedIcon from "@mui/icons-material/ApartmentOutlined";
 import BuildOutlinedIcon from "@mui/icons-material/BuildOutlined";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
-import GradingOutlinedIcon from "@mui/icons-material/GradingOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import MessageOutlinedIcon from "@mui/icons-material/MessageOutlined";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
+import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
-import QuizOutlinedIcon from "@mui/icons-material/QuizOutlined";
 import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
 
 import { useAuth } from "../../../context/AuthContext";
@@ -51,22 +50,10 @@ const adminNavigationItems = [
   { label: "Course Offerings", path: "/admin/course-offerings", icon: AdminPanelSettingsOutlinedIcon },
 ];
 
-const createQuizNavigationItem = {
-  label: "Create Quiz",
-  path: "/lms/quizzes/create",
-  icon: QuizOutlinedIcon,
-};
-
-const attemptQuizNavigationItem = {
-  label: "Attempt Quiz",
-  path: "/lms/quizzes/attempt",
-  icon: QuizOutlinedIcon,
-};
-
-const gradesNavigationItem = {
-  label: "Grades",
-  path: "/grades/review-submissions",
-  icon: GradingOutlinedIcon,
+const staffProfileNavigationItem = {
+  label: "Staff Profile",
+  path: "/staff/profile",
+  icon: PersonOutlineOutlinedIcon,
 };
 
 const academicProgressNavigationItem = {
@@ -82,6 +69,8 @@ const maintenanceNavigationItem = {
 };
 
 const roleAliases = {
+  professor: "instructor",
+  ta: "instructor",
   teacher: "instructor",
   staff: "instructor",
 };
@@ -157,8 +146,6 @@ const MainLayout = ({ children, profile }) => {
         dashboard,
         ...adminNavigationItems,
         rooms,
-        createQuizNavigationItem,
-        gradesNavigationItem,
         maintenanceNavigationItem,
         messages,
       ],
@@ -166,15 +153,13 @@ const MainLayout = ({ children, profile }) => {
         dashboard,
         courses,
         rooms,
-        attemptQuizNavigationItem,
         maintenanceNavigationItem,
         messages,
       ],
       instructor: [
         dashboard,
         rooms,
-        createQuizNavigationItem,
-        gradesNavigationItem,
+        staffProfileNavigationItem,
         messages,
       ],
       parent: [dashboard, academicProgressNavigationItem, messages],
@@ -274,18 +259,6 @@ const MainLayout = ({ children, profile }) => {
     setNotificationAnchorEl(null);
   };
 
-  const getMessagesPath = () => {
-    if (navigationRole === "parent") {
-      return "/parent/messages";
-    }
-
-    if (navigationRole === "instructor") {
-      return "/teacher/messages";
-    }
-
-    return "/messages";
-  };
-
   const handleNotificationClick = async (notification) => {
     handleCloseNotifications();
 
@@ -318,9 +291,6 @@ const MainLayout = ({ children, profile }) => {
       }
     }
 
-    if (notification.message_id) {
-      navigate(getMessagesPath());
-    }
   };
 
   return (

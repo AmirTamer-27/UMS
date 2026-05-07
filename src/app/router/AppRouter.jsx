@@ -27,9 +27,6 @@ import MaintenanceReportPage from "../../facilities/classroom-laboratory-managem
 import StudentRecordsPage from "../../facilities/administrative-office-automation/pages/StudentRecordsPage";
 import AssignmentDetailPage from "../../modules/lms/pages/AssignmentDetailPage";
 import CourseOfferingPage from "../../modules/lms/pages/CourseOfferingPage";
-import CreateQuizPage from "../../modules/lms/pages/CreateQuizPage";
-import AttemptQuizPage from "../../modules/lms/pages/AttemptQuizPage";
-import ReviewSubmissionsPage from "../../modules/grades/pages/ReviewSubmissionsPage";
 import ApplicationFormPage from "../../modules/admissions/pages/ApplicationFormPage";
 import AdminApplicationsPage from "../../modules/admissions/pages/AdminApplicationsPage";
 import ParentStudentProgressPage from "../../modules/lms/pages/ParentStudentProgressPage";
@@ -190,33 +187,6 @@ const AppRouter = () => (
           </ProtectedRoute>
         }
         path="/lms/courses/:courseOfferingId/assignments/:assignmentId"
-      />
-
-      <Route
-        element={
-          <ProtectedRoute>
-            <CreateQuizPage />
-          </ProtectedRoute>
-        }
-        path="/lms/quizzes/create"
-      />
-
-      <Route
-        element={
-          <ProtectedRoute>
-            <AttemptQuizPage />
-          </ProtectedRoute>
-        }
-        path="/lms/quizzes/attempt"
-      />
-
-      <Route
-        element={
-          <ProtectedRoute>
-            <ReviewSubmissionsPage />
-          </ProtectedRoute>
-        }
-        path="/grades/review-submissions"
       />
 
       <Route element={<ApplicationFormPage />} path="/admissions/apply" />

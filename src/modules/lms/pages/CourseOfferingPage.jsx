@@ -19,6 +19,15 @@ import { supabase } from "../../../services/supabase";
 import { useAuth } from "../../../context/AuthContext";
 import MaterialsTab from "../components/MaterialsTab";
 import AssignmentsTab from "../components/AssignmentsTab";
+import QuizzesTab from "../components/QuizzesTab";
+import SubmissionsTab from "../components/SubmissionsTab";
+
+const getInitialTabIndex = (tab) => {
+  if (tab === "assignments") return 1;
+  if (tab === "quizzes") return 2;
+  if (tab === "submissions") return 3;
+  return 0;
+};
 
 const CourseOfferingPage = () => {
   const { courseOfferingId } = useParams();
@@ -29,14 +38,14 @@ const CourseOfferingPage = () => {
   const [courseOffering, setCourseOffering] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [tabIndex, setTabIndex] = useState(searchParams.get("tab") === "assignments" ? 1 : 0);
+  const [tabIndex, setTabIndex] = useState(getInitialTabIndex(searchParams.get("tab")));
 
   useEffect(() => {
     loadCourseOffering();
   }, [courseOfferingId]);
 
   useEffect(() => {
-    setTabIndex(searchParams.get("tab") === "assignments" ? 1 : 0);
+    setTabIndex(getInitialTabIndex(searchParams.get("tab")));
   }, [searchParams]);
 
   const loadCourseOffering = async () => {
@@ -61,6 +70,17 @@ const CourseOfferingPage = () => {
   const handleTabChange = (event, newValue) => {
     setTabIndex(newValue);
   };
+
+  const role = profile?.role;
+  const isInstructor =
+    role === "admin" ||
+    role === "teacher" ||
+    role === "instructor" ||
+    role === "staff" ||
+    role === "professor" ||
+    role === "ta";
+  const canManageQuizzes =
+    role === "admin" || (isInstructor && courseOffering?.instructor_user_id === user?.id);
 
   if (loading) {
     return (
@@ -135,6 +155,8 @@ const CourseOfferingPage = () => {
               >
                 <Tab label="Materials" />
                 <Tab label="Assignments" />
+                <Tab label="Quizzes" />
+                {canManageQuizzes ? <Tab label="Submissions" /> : null}
               </Tabs>
             </Card>
 
@@ -151,6 +173,20 @@ const CourseOfferingPage = () => {
                   courseOfferingId={courseOfferingId}
                   userRole={profile?.role}
                   userId={user?.id}
+                />
+              )}
+              {tabIndex === 2 && (
+                <QuizzesTab
+                  canManageQuizzes={canManageQuizzes}
+                  courseOfferingId={courseOfferingId}
+                  userRole={profile?.role}
+                  userId={user?.id}
+                />
+              )}
+              {tabIndex === 3 && canManageQuizzes && (
+                <SubmissionsTab
+                  canReview={canManageQuizzes}
+                  courseOfferingId={courseOfferingId}
                 />
               )}
             </Box>

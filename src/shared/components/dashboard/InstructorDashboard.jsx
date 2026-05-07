@@ -114,6 +114,7 @@ const InstructorDashboard = ({ data, loading }) => {
 
       <QuickActions
         actions={[
+          { label: "Staff Profile", to: "/staff/profile" },
           { label: "Student Roster", to: "/staff/students" },
           { label: "Send Message", color: "secondary", variant: "outlined" },
         ]}
