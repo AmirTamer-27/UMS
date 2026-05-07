@@ -1,8 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Button, Card, CardContent, Stack, Typography } from "@mui/material";
 import AddCircleOutlinedIcon from "@mui/icons-material/AddCircleOutlined";
-import AssignmentTurnedInOutlinedIcon from "@mui/icons-material/AssignmentTurnedInOutlined";
-import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
 import LibraryBooksOutlinedIcon from "@mui/icons-material/LibraryBooksOutlined";
@@ -16,10 +14,6 @@ import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 const actionIcons = {
   "Browse Courses": LibraryBooksOutlinedIcon,
   "My Registrations": FactCheckOutlinedIcon,
-  "Submit Assignment": AssignmentTurnedInOutlinedIcon,
-  "Upload Material": CloudUploadOutlinedIcon,
-  "Create Assignment": AddCircleOutlinedIcon,
-  "View Submissions": FactCheckOutlinedIcon,
   "Create Student": PersonAddAltOutlinedIcon,
   "Update Student": EditOutlinedIcon,
   "Create Staff": SchoolOutlinedIcon,

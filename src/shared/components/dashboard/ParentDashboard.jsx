@@ -1,7 +1,6 @@
 import { Grid, Stack } from "@mui/material";
 
 import QuickActions from "./QuickActions";
-import RecentActivityCard from "./RecentActivityCard";
 import SummaryCard from "./SummaryCard";
 
 const ParentDashboard = ({ data, loading, profile }) => {
@@ -40,10 +39,6 @@ const ParentDashboard = ({ data, loading, profile }) => {
         profile={profile}
         actions={[{ label: "Send Message" }]}
       />
-
-      <RecentActivityCard>
-        Teacher updates and replies to your messages will appear here.
-      </RecentActivityCard>
     </Stack>
   );
 };

@@ -2,7 +2,6 @@ import { Grid, Stack } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
 import QuickActions from "./QuickActions";
-import RecentActivityCard from "./RecentActivityCard";
 import SummaryCard from "./SummaryCard";
 
 const countValue = (value) => (Array.isArray(value) ? value.length : value || 0);
@@ -67,10 +66,6 @@ const AdminDashboard = ({ data, loading }) => {
           },
         ]}
       />
-      <RecentActivityCard>
-        Course publishing, student record updates, and staff profile changes will
-        appear here.
-      </RecentActivityCard>
     </Stack>
   );
 };

@@ -3,12 +3,10 @@ import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import { useNavigate } from "react-router-dom";
 
 import QuickActions from "./QuickActions";
-import RecentActivityCard from "./RecentActivityCard";
 import SummaryCard from "./SummaryCard";
 
 const StudentDashboard = ({ data, loading }) => {
   const navigate = useNavigate();
-  const firstRegisteredOfferingId = data.registeredOfferings?.[0]?.id;
 
   const getOfferingName = (offering) => {
     const courseCode = offering.courses?.code;
@@ -95,20 +93,8 @@ const StudentDashboard = ({ data, loading }) => {
           { label: "Browse Courses", onClick: () => navigate("/courses/registration") },
           { label: "Find Professors", to: "/student/professors", color: "secondary" },
           { label: "My Registrations", color: "secondary", variant: "outlined" },
-          {
-            label: "Submit Assignment",
-            color: "warning",
-            onClick: () => (
-              firstRegisteredOfferingId &&
-              navigate(`/lms/courses/${firstRegisteredOfferingId}?tab=assignments`)
-            ),
-          },
         ]}
       />
-      <RecentActivityCard>
-        Registration confirmations, assignment updates, and new course materials
-        will appear here.
-      </RecentActivityCard>
     </Stack>
   );
 };
