@@ -24,11 +24,13 @@ import {
   StudentStaffMessagesPage,
 } from "../../community/student-to-staff-communication/pages";
 import ClassroomsPage from "../../facilities/classroom-laboratory-management/pages/ClassroomsPage";
+import MaintenanceReportPage from "../../facilities/classroom-laboratory-management/pages/MaintenanceReportPage";
 import StudentRecordsPage from "../../facilities/administrative-office-automation/pages/StudentRecordsPage";
 import AssignmentDetailPage from "../../modules/lms/pages/AssignmentDetailPage";
 import CourseOfferingPage from "../../modules/lms/pages/CourseOfferingPage";
 import ApplicationFormPage from "../../modules/admissions/pages/ApplicationFormPage";
 import AdminApplicationsPage from "../../modules/admissions/pages/AdminApplicationsPage";
+import ParentStudentProgressPage from "../../modules/lms/pages/ParentStudentProgressPage";
 
 const AppRouter = () => (
   <Router future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
@@ -65,6 +67,15 @@ const AppRouter = () => (
       <Route
         element={
           <ProtectedRoute>
+            <MaintenanceReportPage />
+          </ProtectedRoute>
+        }
+        path="/facilities/maintenance-report"
+      />
+
+      <Route
+        element={
+          <ProtectedRoute>
             <AdminCourseOfferingPage />
           </ProtectedRoute>
         }
@@ -79,6 +90,7 @@ const AppRouter = () => (
         }
         path="/admin/student-records"
       />
+
       <Route
         element={
           <ProtectedRoute>
@@ -87,6 +99,7 @@ const AppRouter = () => (
         }
         path="/staff/profile"
       />
+
       <Route
         element={
           <ProtectedRoute>
@@ -113,8 +126,6 @@ const AppRouter = () => (
         path="/staff/students"
       />
 
-
-
       <Route
         element={
           <ProtectedRoute>
@@ -138,6 +149,15 @@ const AppRouter = () => (
         element={
           <ProtectedRoute>
             <ParentMessagesPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/parent/progress"
+        element={
+          <ProtectedRoute>
+            <ParentStudentProgressPage />
           </ProtectedRoute>
         }
       />
@@ -178,7 +198,6 @@ const AppRouter = () => (
         path="/lms/courses/:courseOfferingId/assignments/:assignmentId"
       />
 
-      {/* Public admission application (no auth required) */}
       <Route element={<ApplicationFormPage />} path="/admissions/apply" />
 
       <Route

@@ -23,13 +23,16 @@ import {
 
 import AdminPanelSettingsOutlinedIcon from "@mui/icons-material/AdminPanelSettingsOutlined";
 import ApartmentOutlinedIcon from "@mui/icons-material/ApartmentOutlined";
+import BuildOutlinedIcon from "@mui/icons-material/BuildOutlined";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import MessageOutlinedIcon from "@mui/icons-material/MessageOutlined";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
+import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
+import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
 
 import { useAuth } from "../../../context/AuthContext";
 import { supabase } from "../../../services/supabase/client";
@@ -48,7 +51,27 @@ const adminNavigationItems = [
   { label: "Course Offerings", path: "/admin/course-offerings", icon: AdminPanelSettingsOutlinedIcon },
 ];
 
+const staffProfileNavigationItem = {
+  label: "Staff Profile",
+  path: "/staff/profile",
+  icon: PersonOutlineOutlinedIcon,
+};
+
+const academicProgressNavigationItem = {
+  label: "Academic Progress",
+  path: "/parent/progress",
+  icon: TrendingUpOutlinedIcon,
+};
+
+const maintenanceNavigationItem = {
+  label: "Maintenance",
+  path: "/facilities/maintenance-report",
+  icon: BuildOutlinedIcon,
+};
+
 const roleAliases = {
+  professor: "instructor",
+  ta: "instructor",
   teacher: "instructor",
   staff: "instructor",
 };
@@ -133,10 +156,27 @@ const MainLayout = ({ children, profile }) => {
     const [dashboard, courses, rooms, messages] = baseNavigation;
 
     const navigationByRole = {
-      admin: [dashboard, ...adminNavigationItems, messages],
-      student: [dashboard, courses, messages],
-      instructor: [dashboard, rooms, messages],
-      parent: [dashboard, messages],
+      admin: [
+        dashboard,
+        ...adminNavigationItems,
+        rooms,
+        maintenanceNavigationItem,
+        messages,
+      ],
+      student: [
+        dashboard,
+        courses,
+        rooms,
+        maintenanceNavigationItem,
+        messages,
+      ],
+      instructor: [
+        dashboard,
+        rooms,
+        staffProfileNavigationItem,
+        messages,
+      ],
+      parent: [dashboard, academicProgressNavigationItem, messages],
     };
 
     return navigationByRole[navigationRole] || navigationByRole.student;

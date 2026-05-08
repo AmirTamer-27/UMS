@@ -14,7 +14,6 @@ import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import { useNavigate } from "react-router-dom";
 
 import QuickActions from "./QuickActions";
-import RecentActivityCard from "./RecentActivityCard";
 import SummaryCard from "./SummaryCard";
 
 const InstructorDashboard = ({ data, loading }) => {
@@ -114,14 +113,11 @@ const InstructorDashboard = ({ data, loading }) => {
 
       <QuickActions
         actions={[
+          { label: "Staff Profile", to: "/staff/profile" },
           { label: "Student Roster", to: "/staff/students" },
           { label: "Send Message", color: "secondary", variant: "outlined" },
         ]}
       />
-
-      <RecentActivityCard>
-        New submissions, parent messages, and material uploads will appear here.
-      </RecentActivityCard>
     </Stack>
   );
 };

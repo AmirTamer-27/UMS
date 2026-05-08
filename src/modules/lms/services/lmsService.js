@@ -73,6 +73,7 @@ export const uploadMaterial = async (courseOfferingId, title, file, userId) => {
     .single();
 
   if (error) throw error;
+
   return data;
 };
 
@@ -166,6 +167,182 @@ export const getMySubmission = async (assignmentId, studentId) => {
     .eq('assignment_id', assignmentId)
     .eq('student_user_id', studentId)
     .maybeSingle();
+  if (error) throw error;
+  return data;
+};
+
+export const getCourseQuizzes = async (courseOfferingId) => {
+  const { data, error } = await supabase
+    .from('quizzes')
+    .select('*, profiles!created_by(full_name)')
+    .eq('course_offering_id', courseOfferingId);
+  if (error) throw error;
+  return data;
+};
+
+export const getQuizQuestions = async (quizId, includeAnswers = false) => {
+  const columns = includeAnswers
+    ? 'id, question_text, correct_answer'
+    : 'id, question_text';
+
+  const { data, error } = await supabase
+    .from('quiz_questions')
+    .select(columns)
+    .eq('quiz_id', quizId);
+  if (error) throw error;
+  return data;
+};
+
+export const createQuizWithQuestions = async ({
+  courseOfferingId,
+  title,
+  description,
+  questions,
+  userId,
+}) => {
+  const cleanedQuestions = questions
+    .map((question) => ({
+      question_text: question.question_text.trim(),
+      correct_answer: question.correct_answer.trim(),
+    }))
+    .filter((question) => question.question_text && question.correct_answer);
+
+  if (!cleanedQuestions.length) {
+    throw new Error('Add at least one complete question.');
+  }
+
+  const { data: quizData, error: quizError } = await supabase
+    .from('quizzes')
+    .insert([
+      {
+        course_offering_id: courseOfferingId,
+        title: title.trim(),
+        description: description.trim(),
+        created_by: userId,
+        is_published: true,
+      },
+    ])
+    .select()
+    .single();
+
+  if (quizError) throw quizError;
+
+  const { error: questionsError } = await supabase
+    .from('quiz_questions')
+    .insert(
+      cleanedQuestions.map((question) => ({
+        quiz_id: quizData.id,
+        ...question,
+      })),
+    );
+
+  if (questionsError) throw questionsError;
+
+  return quizData;
+};
+
+export const getMyQuizAttempt = async (quizId, studentId) => {
+  const { data, error } = await supabase
+    .from('quiz_attempts')
+    .select('*')
+    .eq('quiz_id', quizId)
+    .eq('student_user_id', studentId)
+    .order('submitted_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+};
+
+export const submitQuizAttempt = async ({ quizId, studentId, questions, answers }) => {
+  const { data: attempt, error: attemptError } = await supabase
+    .from('quiz_attempts')
+    .insert([
+      {
+        quiz_id: quizId,
+        student_user_id: studentId,
+        submitted_at: new Date().toISOString(),
+      },
+    ])
+    .select()
+    .single();
+
+  if (attemptError) throw attemptError;
+
+  const answerRows = questions.map((question) => ({
+    attempt_id: attempt.id,
+    question_id: question.id,
+    answer_text: answers[question.id] || '',
+  }));
+
+  const { error: answersError } = await supabase
+    .from('quiz_answers')
+    .insert(answerRows);
+
+  if (answersError) throw answersError;
+
+  return attempt;
+};
+
+export const getCourseAssignmentSubmissions = async (courseOfferingId) => {
+  const { data, error } = await supabase
+    .from('assignment_submissions')
+    .select(`
+      id,
+      submission_text,
+      file_path,
+      submitted_at,
+      grade,
+      profiles!student_user_id(full_name, email),
+      assignments!inner(id, title, course_offering_id)
+    `)
+    .eq('assignments.course_offering_id', courseOfferingId);
+
+  if (error) throw error;
+  return data;
+};
+
+export const updateAssignmentSubmissionGrade = async (submissionId, grade) => {
+  const { data, error } = await supabase
+    .from('assignment_submissions')
+    .update({
+      grade: grade === '' || grade === null || grade === undefined ? null : Number(grade),
+    })
+    .eq('id', submissionId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const getCourseQuizAttempts = async (courseOfferingId) => {
+  const { data, error } = await supabase
+    .from('quiz_attempts')
+    .select(`
+      id,
+      submitted_at,
+      grade,
+      profiles!student_user_id(full_name, email),
+      quizzes!inner(id, title, course_offering_id),
+      quiz_answers(answer_text, quiz_questions(question_text, correct_answer))
+    `)
+    .eq('quizzes.course_offering_id', courseOfferingId);
+
+  if (error) throw error;
+  return data;
+};
+
+export const updateQuizAttemptGrade = async (attemptId, grade) => {
+  const { data, error } = await supabase
+    .from('quiz_attempts')
+    .update({
+      grade: grade === '' || grade === null || grade === undefined ? null : Number(grade),
+    })
+    .eq('id', attemptId)
+    .select()
+    .single();
+
   if (error) throw error;
   return data;
 };

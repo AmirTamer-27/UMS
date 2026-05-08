@@ -24,6 +24,8 @@ const emptyDashboardData = {
 };
 
 const roleAliases = {
+  professor: "instructor",
+  ta: "instructor",
   teacher: "instructor",
   staff: "instructor",
 };

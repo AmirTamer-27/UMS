@@ -9,6 +9,8 @@ import Paper from "@mui/material/Paper";
 import Snackbar from "@mui/material/Snackbar";
 import Typography from "@mui/material/Typography";
 
+import { useAuth } from "../../../context/AuthContext";
+import MainLayout from "../../../shared/components/layout/MainLayout";
 import { StaffForm } from "../components";
 import {
   fetchStaffProfile,
@@ -20,15 +22,17 @@ import {
 } from "../services";
 
 const requiredFields = ["staff_number", "title", "office_hours"];
+const staffProfileRoles = new Set(["teacher", "instructor", "staff", "professor", "ta"]);
 
 const StaffProfilePage = () => {
+  const { profile } = useAuth();
   const [userId, setUserId] = useState("");
   const [formData, setFormData] = useState(staffProfileInitialData);
   const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasStaffProfile, setHasStaffProfile] = useState(false);
-  const [isTeacher, setIsTeacher] = useState(false);
+  const [canEditStaffProfile, setCanEditStaffProfile] = useState(false);
   const [accessChecked, setAccessChecked] = useState(false);
   const [snackbar, setSnackbar] = useState({
     message: "",
@@ -54,7 +58,7 @@ const StaffProfilePage = () => {
         }
 
         setUserId(user.id);
-        setIsTeacher(role === "teacher");
+        setCanEditStaffProfile(staffProfileRoles.has(role));
         setAccessChecked(true);
 
         if (profile) {
@@ -151,66 +155,67 @@ const StaffProfilePage = () => {
     }));
   };
 
-  if (!loading && accessChecked && !isTeacher) {
+  if (!loading && accessChecked && !canEditStaffProfile) {
     return <Navigate replace to="/dashboard" />;
   }
 
   const formDisabled = loading || saving || !userId || !hasStaffProfile;
 
   return (
-    <Container
-      maxWidth="sm"
-      sx={{
-        alignItems: "center",
-        bgcolor: "#F8FAFC",
-        display: "flex",
-        minHeight: "100vh",
-        py: 6,
-      }}
-    >
-      <Paper
-        elevation={0}
+    <MainLayout profile={profile}>
+      <Container
+        maxWidth="sm"
         sx={{
-          border: "1px solid #E2E8F0",
-          borderRadius: 2,
-          p: { xs: 3, sm: 4 },
-          width: "100%",
+          alignItems: "center",
+          display: "flex",
+          minHeight: "calc(100vh - 120px)",
+          py: 4,
         }}
       >
-        <Typography color="#0F172A" component="h1" fontWeight={700} variant="h4">
-          Staff Profile
-        </Typography>
-        <Typography color="#475569" sx={{ mt: 1, mb: 3 }} variant="body1">
-          Review and update your academic staff details.
-        </Typography>
+        <Paper
+          elevation={0}
+          sx={{
+            border: "1px solid #E2E8F0",
+            borderRadius: 2,
+            p: { xs: 3, sm: 4 },
+            width: "100%",
+          }}
+        >
+          <Typography color="#0F172A" component="h1" fontWeight={700} variant="h4">
+            Staff Profile
+          </Typography>
+          <Typography color="#475569" sx={{ mt: 1, mb: 3 }} variant="body1">
+            Review and update your academic staff details.
+          </Typography>
 
-        {loading ? (
-          <Box
-            sx={{
-              alignItems: "center",
-              display: "flex",
-              justifyContent: "center",
-              minHeight: 280,
-            }}
-          >
-            <CircularProgress />
-          </Box>
-        ) : hasStaffProfile ? (
-          <StaffForm
-            disabled={formDisabled}
-            errors={fieldErrors}
-            formData={formData}
-            onChange={handleChange}
-            onSubmit={handleSubmit}
-            saving={saving}
-            submitLabel="Update Staff Profile"
-          />
-        ) : (
-          <Alert severity="info" sx={{ borderRadius: 1 }}>
-            Your profile has not been created yet. Please contact an administrator.
-          </Alert>
-        )}
-      </Paper>
+          {loading ? (
+            <Box
+              sx={{
+                alignItems: "center",
+                display: "flex",
+                justifyContent: "center",
+                minHeight: 280,
+              }}
+            >
+              <CircularProgress />
+            </Box>
+          ) : hasStaffProfile ? (
+            <StaffForm
+              disabled={formDisabled}
+              errors={fieldErrors}
+              formData={formData}
+              onChange={handleChange}
+              onSubmit={handleSubmit}
+              saving={saving}
+              submitLabel="Update Staff Profile"
+            />
+          ) : (
+            <Alert severity="info" sx={{ borderRadius: 1 }}>
+              Your profile has not been created yet. Please contact an administrator.
+            </Alert>
+          )}
+        </Paper>
+      </Container>
 
       <Snackbar
         anchorOrigin={{ horizontal: "center", vertical: "bottom" }}
@@ -227,7 +232,7 @@ const StaffProfilePage = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Container>
+    </MainLayout>
   );
 };
 

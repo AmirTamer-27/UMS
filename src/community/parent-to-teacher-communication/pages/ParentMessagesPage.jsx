@@ -265,11 +265,13 @@ const ParentMessagesPage = () => {
       conversationId = newConv.id;
     }
 
-    const { error: msgError } = await supabase.from("messages").insert({
-      conversation_id: conversationId,
-      sender_user_id: user.id,
-      message_body: message,
-    });
+    const { error: msgError } = await supabase
+      .from("messages")
+      .insert({
+        conversation_id: conversationId,
+        sender_user_id: user.id,
+        message_body: message,
+      });
 
     if (msgError) {
       setError(msgError.message);
