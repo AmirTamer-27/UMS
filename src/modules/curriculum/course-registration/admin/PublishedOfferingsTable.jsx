@@ -12,14 +12,11 @@ import {
   Typography,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
-import MenuBookIcon from '@mui/icons-material/MenuBook';
-import { useNavigate } from 'react-router-dom';
 
 import supabase, { isSupabaseConfigured } from '../../../../services/supabase/client';
 
 export default function PublishedOfferingsTable({ refreshKey = 0 }) {
   const [rows, setRows] = useState([]);
-  const navigate = useNavigate();
 
   useEffect(() => {
     let mounted = true;
@@ -121,15 +118,6 @@ export default function PublishedOfferingsTable({ refreshKey = 0 }) {
                   />
                 </TableCell>
                 <TableCell align="right">
-                  <Tooltip title="View in LMS">
-                    <IconButton
-                      size="small"
-                      color="primary"
-                      onClick={() => navigate(`/lms/courses/${row.id}`)}
-                    >
-                      <MenuBookIcon />
-                    </IconButton>
-                  </Tooltip>
                   <Tooltip title="Edit Course Offering">
                     <IconButton size="small">
                       <EditIcon />

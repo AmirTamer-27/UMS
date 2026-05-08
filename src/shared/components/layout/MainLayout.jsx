@@ -358,9 +358,9 @@ const MainLayout = ({ children, profile }) => {
           <Stack alignItems="center" direction="row" spacing={1.5}>
             {canEditStaffProfile ? (
               <IconButton
-                aria-label="Edit profile"
+                aria-label="Staff profile"
                 color="primary"
-                onClick={() => navigate("/staff/profile/edit")}
+                onClick={() => navigate("/staff/profile")}
                 sx={{
                   borderRadius: 1,
                   height: 40,

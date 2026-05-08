@@ -200,6 +200,61 @@ const getStudentRegistrations = async (client, studentUserId, offeringIds) => {
   );
 };
 
+const getPrerequisitesByCourseId = async (client, courseIds) => {
+  if (!courseIds.length) {
+    return new Map();
+  }
+
+  const { data, error } = await client
+    .from("course_prerequisites")
+    .select("course_id, prerequisite_course_id")
+    .in("course_id", courseIds);
+
+  if (error) {
+    throw error;
+  }
+
+  const prerequisitesByCourseId = new Map();
+
+  (data ?? []).forEach(
+    ({ course_id: courseId, prerequisite_course_id: prerequisiteCourseId }) => {
+      if (!prerequisitesByCourseId.has(courseId)) {
+        prerequisitesByCourseId.set(courseId, []);
+      }
+
+      prerequisitesByCourseId.get(courseId).push(prerequisiteCourseId);
+    },
+  );
+
+  return prerequisitesByCourseId;
+};
+
+const getRegisteredCourseIds = async (client, studentUserId) => {
+  const { data, error } = await client
+    .from("registrations")
+    .select("course_offerings(course_id)")
+    .eq("student_user_id", studentUserId)
+    .eq("status", "registered");
+
+  if (error) {
+    throw error;
+  }
+
+  return new Set(
+    (data ?? [])
+      .map((registration) => registration.course_offerings?.course_id)
+      .filter(Boolean),
+  );
+};
+
+const hasMetPrerequisites = (courseId, prerequisitesByCourseId, registeredCourseIds) => {
+  const prerequisiteCourseIds = prerequisitesByCourseId.get(courseId) ?? [];
+
+  return prerequisiteCourseIds.every((prerequisiteCourseId) =>
+    registeredCourseIds.has(prerequisiteCourseId),
+  );
+};
+
 export const courseRegistrationService = {
   getAvailableCoursesForStudent: async (profile) => {
     if (!profile?.id) {
@@ -245,13 +300,31 @@ export const courseRegistrationService = {
       coursesById.has(offering.course_id),
     );
 
+    const [prerequisitesByCourseId, registeredCourseIds] = await withTimeout(
+      Promise.all([
+        getPrerequisitesByCourseId(
+          client,
+          matchingOfferings.map((offering) => offering.course_id),
+        ),
+        getRegisteredCourseIds(client, profile.id),
+      ]),
+      "Loading prerequisite eligibility",
+    );
+    const eligibleOfferings = matchingOfferings.filter((offering) =>
+      hasMetPrerequisites(
+        offering.course_id,
+        prerequisitesByCourseId,
+        registeredCourseIds,
+      ),
+    );
+
     const [instructorNames, registeredCounts, studentRegistrations] = await withTimeout(
       Promise.all([
         getInstructorMap(
           client,
           [
             ...new Set(
-              matchingOfferings
+              eligibleOfferings
                 .map((offering) => offering.instructor_user_id)
                 .filter(Boolean),
             ),
@@ -259,12 +332,12 @@ export const courseRegistrationService = {
         ),
         getRegisteredCounts(
           client,
-          matchingOfferings.map((offering) => offering.id),
+          eligibleOfferings.map((offering) => offering.id),
         ),
         getStudentRegistrations(
           client,
           profile.id,
-          matchingOfferings.map((offering) => offering.id),
+          eligibleOfferings.map((offering) => offering.id),
         ),
       ]),
       "Loading instructors and registration counts",
@@ -284,7 +357,7 @@ export const courseRegistrationService = {
         departmentId: profile.department_id,
         level: studentProfile.level,
       },
-      offerings: matchingOfferings.map((offering) => {
+      offerings: eligibleOfferings.map((offering) => {
         const course = coursesById.get(offering.course_id);
         const registeredCount = registeredCounts.get(offering.id) ?? 0;
         const seatLimit = offering.seat_limit ?? 0;
