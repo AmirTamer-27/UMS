@@ -25,6 +25,7 @@ import AdminPanelSettingsOutlinedIcon from "@mui/icons-material/AdminPanelSettin
 import ApartmentOutlinedIcon from "@mui/icons-material/ApartmentOutlined";
 import BuildOutlinedIcon from "@mui/icons-material/BuildOutlined";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import MessageOutlinedIcon from "@mui/icons-material/MessageOutlined";
@@ -118,6 +119,18 @@ const getRelativeTime = (dateValue) => {
   }).format(new Date(dateValue));
 };
 
+const getNotificationBody = (notification) => {
+  const body = notification.body || "You have a new message.";
+  const courseName = notification.course_offerings?.courses?.name;
+
+  if (notification.type === "material" && courseName) {
+    const materialBody = body.replace(/^New Material:\s*/i, "");
+    return `New material in ${courseName}: ${materialBody}`;
+  }
+
+  return body;
+};
+
 const MainLayout = ({ children, profile }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -129,6 +142,7 @@ const MainLayout = ({ children, profile }) => {
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState(null);
   const canShowNotifications = notificationRoles.has(navigationRole);
+  const canEditStaffProfile = role === "teacher" || role === "staff";
   const isNotificationMenuOpen = Boolean(notificationAnchorEl);
 
   const initials = displayName
@@ -185,7 +199,15 @@ const MainLayout = ({ children, profile }) => {
     try {
       const { data, error } = await supabase
         .from("notifications")
-        .select("*")
+        .select(`
+          *,
+          course_offerings (
+            id,
+            courses (
+              name
+            )
+          )
+        `)
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
@@ -291,6 +313,9 @@ const MainLayout = ({ children, profile }) => {
       }
     }
 
+    if (notification.type === "message" || notification.message_id) {
+      navigate("/messages");
+    }
   };
 
   return (
@@ -331,6 +356,20 @@ const MainLayout = ({ children, profile }) => {
           </Box>
 
           <Stack alignItems="center" direction="row" spacing={1.5}>
+            {canEditStaffProfile ? (
+              <IconButton
+                aria-label="Edit profile"
+                color="primary"
+                onClick={() => navigate("/staff/profile/edit")}
+                sx={{
+                  borderRadius: 1,
+                  height: 40,
+                  width: 40,
+                }}
+              >
+                <EditOutlinedIcon fontSize="small" />
+              </IconButton>
+            ) : null}
             {canShowNotifications ? (
               <>
                 <IconButton
@@ -439,7 +478,7 @@ const MainLayout = ({ children, profile }) => {
                               }}
                               variant="body2"
                             >
-                              {notification.body || "You have a new message."}
+                              {getNotificationBody(notification)}
                             </Typography>
                             <Typography
                               color="text.secondary"

@@ -12,6 +12,7 @@ import Dashboard from "../Dashboard";
 import AdminCourseOfferingPage from "../../modules/curriculum/course-registration/admin/AdminCourseOfferingPage";
 import {
   AdminCreateStaffPage,
+  EditStaffProfile,
   StaffProfilePage,
   StaffStudentRosterPage,
 } from "../../staff/professor-ta-management/pages";
@@ -99,6 +100,14 @@ const AppRouter = () => (
         path="/staff/profile"
       />
 
+      <Route
+        element={
+          <ProtectedRoute>
+            <EditStaffProfile />
+          </ProtectedRoute>
+        }
+        path="/staff/profile/edit"
+      />
       <Route
         element={
           <ProtectedRoute>
